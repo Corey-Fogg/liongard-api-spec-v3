@@ -94,12 +94,10 @@ curl -X POST "https://api.liongard.com/v3/inspectors" \
 **Response:**
 ```json
 {
-  "data": {
-    "inspectorId": "inspector_abc123",
-    "name": "acme-monitoring",
-    "displayName": "Acme Monitoring Tool",
-    "status": "active"
-  }
+  "inspectorId": "inspector_abc123",
+  "name": "acme-monitoring",
+  "displayName": "Acme Monitoring Tool",
+  "status": "active"
 }
 ```
 
@@ -176,14 +174,12 @@ curl -X GET "https://api.liongard.com/v3/jobs/job_xyz789" \
 **Response:**
 ```json
 {
-  "data": {
-    "jobId": "job_xyz789",
-    "status": "completed",
-    "result": {
-      "accepted": true,
-      "environmentsProcessed": 1,
-      "assetsProcessed": 1
-    }
+  "jobId": "job_xyz789",
+  "status": "completed",
+  "result": {
+    "accepted": true,
+    "environmentsProcessed": 1,
+    "assetsProcessed": 1
   }
 }
 ```
@@ -687,7 +683,7 @@ def wait_for_job(job_id, api_key, timeout=300):
             headers={"X-API-Key": api_key}
         )
         
-        job = response.json()["data"]
+        job = response.json()
         
         if job["status"] == "completed":
             return job["result"]
@@ -778,7 +774,7 @@ def can_push_dataprint(env_id, inspector_id, api_key):
         }
     )
     
-    jobs = response.json()["data"]
+    jobs = response.json()
     return len(jobs) == 0
 
 # Usage
@@ -889,7 +885,7 @@ response = requests.post(
     }
 )
 
-metric_id = response.json()["data"]["metricId"]
+metric_id = response.json()["metricId"]
 ```
 
 ### Evaluating Metrics
@@ -909,7 +905,7 @@ response = requests.post(
     }
 )
 
-results = response.json()["data"]
+results = response.json()
 
 for result in results:
     print(f"{result['environmentName']}: {result['metricName']} = {result['value']}")
@@ -927,7 +923,7 @@ response = requests.get(
     headers={"X-API-Key": api_key}
 )
 
-metrics = response.json()["data"]["metrics"]
+metrics = response.json()["metrics"]
 
 for metric in metrics:
     print(f"{metric['metricName']}: {metric['value']}")
@@ -991,7 +987,7 @@ def get_dashboard_stats(api_key):
         }
     )
     
-    results = response.json()["data"]
+    results = response.json()
     
     # Aggregate across all customers
     stats = {
@@ -1059,7 +1055,7 @@ response = requests.post(
     }
 )
 
-subscription_id = response.json()["data"]["subscriptionId"]
+subscription_id = response.json()["subscriptionId"]
 ```
 
 ### Handle Webhook Deliveries
@@ -1264,6 +1260,41 @@ response = requests.get(
 
 ### Pagination
 
+**List endpoints return arrays directly with pagination in headers:**
+
+```bash
+GET /v3/assets?limit=100&offset=0
+```
+
+**Response Body:**
+```json
+[
+  {
+    "assetId": "asset_1",
+    "name": "server-01",
+    "assetType": "server"
+  },
+  {
+    "assetId": "asset_2", 
+    "name": "server-02",
+    "assetType": "server"
+  }
+]
+```
+
+**Response Headers:**
+```
+X-Pagination-Limit: 100
+X-Pagination-Offset: 0
+X-Pagination-Count: 547
+X-Pagination-Has-More: true
+Link: <https://api.liongard.com/v3/assets?limit=100&offset=100>; rel="next",
+      <https://api.liongard.com/v3/assets?limit=100&offset=0>; rel="first",
+      <https://api.liongard.com/v3/assets?limit=100&offset=500>; rel="last"
+```
+
+**Python Helper:**
+
 ```python
 def get_all_assets(api_key, filters=None):
     """Get all assets with pagination"""
@@ -1272,10 +1303,7 @@ def get_all_assets(api_key, filters=None):
     limit = 100
     
     while True:
-        params = {
-            "limit": limit,
-            "offset": offset
-        }
+        params = {"limit": limit, "offset": offset}
         if filters:
             params["filter"] = filters
         
@@ -1285,17 +1313,47 @@ def get_all_assets(api_key, filters=None):
             params=params
         )
         
-        result = response.json()
-        assets = result["data"]
+        # Response is array directly
+        assets = response.json()
         all_assets.extend(assets)
         
-        # Check if more results
-        if not result["pagination"]["hasMore"]:
+        # Check pagination header
+        has_more = response.headers.get('X-Pagination-Has-More') == 'true'
+        if not has_more:
             break
         
         offset += limit
     
     return all_assets
+```
+
+**Using Link Header:**
+
+```python
+import requests
+from requests.utils import parse_header_links
+
+def get_next_page(response):
+    """Get next page URL from Link header"""
+    link_header = response.headers.get('Link')
+    if not link_header:
+        return None
+    
+    links = parse_header_links(link_header)
+    for link in links:
+        if link.get('rel') == 'next':
+            return link['url']
+    
+    return None
+
+# Usage
+response = requests.get(url, headers=headers)
+assets = response.json()
+
+next_url = get_next_page(response)
+if next_url:
+    response = requests.get(next_url, headers=headers)
+    more_assets = response.json()
 ```
 
 ### Sorting
@@ -1324,7 +1382,7 @@ response = requests.get(
     }
 )
 
-for alert in response.json()["data"]:
+for alert in response.json():
     print(f"{alert['name']} in {alert['environment']['name']}")
 ```
 
@@ -1367,7 +1425,7 @@ class LiongardIntegration:
             }
         )
         
-        return response.json()["data"]["inspectorId"]
+        return response.json()["inspectorId"]
     
     def configure_inspector(self, env_id, inspector_id):
         """Configure inspector for environment (per customer)"""
@@ -1393,7 +1451,7 @@ class LiongardIntegration:
             }
         )
         
-        return response.json()["data"]
+        return response.json()
     
     def create_metrics(self, inspector_id):
         """Create custom metrics (once)"""
@@ -1433,7 +1491,7 @@ class LiongardIntegration:
                     "changesEnabled": True
                 }
             )
-            metric_ids.append(response.json()["data"]["metricId"])
+            metric_ids.append(response.json()["metricId"])
         
         return metric_ids
 
@@ -1521,7 +1579,7 @@ class MonitoringSync:
                 headers=self.integration.headers
             )
             
-            job = response.json()["data"]
+            job = response.json()
             status = job["status"]
             
             if status == "completed":
@@ -1591,7 +1649,7 @@ class Dashboard:
             }
         )
         
-        results = response.json()["data"]
+        results = response.json()
         
         # Aggregate
         stats = {
@@ -1632,7 +1690,7 @@ class Dashboard:
             }
         )
         
-        results = response.json()["data"]
+        results = response.json()
         
         details = {}
         for result in results:
@@ -1978,7 +2036,7 @@ def wait_for_slot(env_id, inspector_id, timeout=300):
                 "filter": f"environmentId=={env_id};inspectorId=={inspector_id};status=in=(pending,processing)"
             }
         )
-        if not response.json()["data"]:
+        if not response.json():
             return True  # Slot available
         time.sleep(10)
     return False
@@ -2128,7 +2186,7 @@ response = requests.get(
     f"{base_url}/v3/environments/{env_id}/inspectors/{inspector_id}/config",
     headers=headers
 )
-config = response.json()["data"]
+config = response.json()
 print(json.dumps(config, indent=2))
 
 # Test 3: Can you push minimal dataprint?
