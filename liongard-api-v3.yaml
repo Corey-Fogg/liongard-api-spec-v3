@@ -1,0 +1,3664 @@
+openapi: 3.1.0
+info:
+  title: Liongard Data API
+  version: "3.0.0"
+  description: |
+    Vendor consumption API for Liongard data (v3). 
+    
+    This API is designed for system-to-system integration and data synchronization between vendors and Liongard.
+    It uses camelCase, supports pagination, filtering via FastAPI Filter syntax, dynamic expand, and first-class webhooks.
+    
+    **Authentication**: All endpoints use API Key authentication via X-API-Key header.
+    
+    **Key Concepts**:
+    - **Environments**: Organizational units (clients, tenants, etc.)
+    - **Inspectors**: Data collection configurations (global entities, scoped by environment for operations)
+    - **Assets**: Inventory items created via inspector data mapping (read-only via API)
+    - **Identities**: User/identity records created via inspector data mapping (read-only via API)
+    - **Alerts**: Trackable issues/tasks (can create, update, close - not delete)
+    - **Dataprints**: Point-in-time data captures from inspectors
+
+servers:
+  - url: https://api.liongard.example.com
+
+security:
+  - apiKeyAuth: []
+
+tags:
+  - name: Alerts
+    description: Alert management (create, read, update - close via patch)
+  - name: Assets
+    description: Asset inventory (read-only - populated via inspector mappings)
+  - name: Environments
+    description: Environment/client management
+  - name: Identities
+    description: Identity records (read-only - populated via inspector mappings)
+  - name: Inspectors
+    description: Inspector configuration and dataprint management
+  - name: Jobs
+    description: Asynchronous job tracking and status
+  - name: Meta
+    description: API capability discovery
+  - name: Metrics
+    description: JMESPath-based metric evaluation and management
+  - name: Webhooks
+    description: Webhook subscription management
+
+paths:
+  # ============================================================================
+  # ALERTS
+  # ============================================================================
+  /v3/alerts:
+    get:
+      tags: [Alerts]
+      summary: List alerts
+      operationId: listAlerts
+      parameters:
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/strictExpand"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/alertListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Alerts]
+      summary: Create an alert
+      operationId: createAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/alertCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/alertGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/alerts/{alertId}:
+    get:
+      tags: [Alerts]
+      summary: Get an alert
+      operationId: getAlert
+      parameters:
+        - $ref: "#/components/parameters/alertId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/alertGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    patch:
+      tags: [Alerts]
+      summary: Update an alert (including close operation)
+      operationId: updateAlert
+      description: |
+        Update alert fields. To close an alert, set status to appropriate closed state.
+        Alerts cannot be deleted, only closed.
+      parameters:
+        - $ref: "#/components/parameters/alertId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/alertPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/alertGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # ASSETS (Read-only)
+  # ============================================================================
+  /v3/assets:
+    get:
+      tags: [Assets]
+      summary: List assets
+      description: Assets are read-only and created via inspector data mappings to the Asset Inventory.
+      operationId: listAssets
+      parameters:
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/strictExpand"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/assetListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/assets/{assetId}:
+    get:
+      tags: [Assets]
+      summary: Get an asset
+      operationId: getAsset
+      parameters:
+        - $ref: "#/components/parameters/assetId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/assetGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # ENVIRONMENTS
+  # ============================================================================
+  /v3/environments:
+    get:
+      tags: [Environments]
+      summary: List environments
+      operationId: listEnvironments
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Environments]
+      summary: Create an environment
+      operationId: createEnvironment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/environmentCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}:
+    get:
+      tags: [Environments]
+      summary: Get an environment
+      operationId: getEnvironment
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    patch:
+      tags: [Environments]
+      summary: Update an environment
+      operationId: updateEnvironment
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/environmentPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    delete:
+      tags: [Environments]
+      summary: Delete an environment
+      operationId: deleteEnvironment
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # IDENTITIES (Read-only)
+  # ============================================================================
+  /v3/identities:
+    get:
+      tags: [Identities]
+      summary: List identities
+      description: Identities are read-only and created via inspector data mappings.
+      operationId: listIdentities
+      parameters:
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/strictExpand"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/identityListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/identities/{identityId}:
+    get:
+      tags: [Identities]
+      summary: Get an identity
+      operationId: getIdentity
+      parameters:
+        - $ref: "#/components/parameters/identityId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/identityGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # INSPECTORS (Global with environment-scoped operations)
+  # ============================================================================
+  /v3/inspectors:
+    get:
+      tags: [Inspectors]
+      summary: List all inspectors (global)
+      operationId: listInspectors
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inspectorListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Inspectors]
+      summary: Create a global inspector
+      description: |
+        Creates a global inspector. The inspector can then be accessed under specific environments
+        using /v3/environments/{environmentId}/inspectors/{inspectorId} for environment-scoped operations.
+      operationId: createInspector
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/inspectorCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inspectorGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/inspectors/{inspectorId}:
+    get:
+      tags: [Inspectors]
+      summary: Get a global inspector
+      operationId: getInspector
+      parameters:
+        - $ref: "#/components/parameters/inspectorId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inspectorGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    patch:
+      tags: [Inspectors]
+      summary: Update a global inspector
+      operationId: updateInspector
+      parameters:
+        - $ref: "#/components/parameters/inspectorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/inspectorPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inspectorGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    delete:
+      tags: [Inspectors]
+      summary: Delete a global inspector
+      operationId: deleteInspector
+      parameters:
+        - $ref: "#/components/parameters/inspectorId"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors:
+    get:
+      tags: [Inspectors]
+      summary: List inspectors for an environment
+      description: |
+        Returns the same global inspectors, but scoped to this environment.
+        The inspectorId values match those from /v3/inspectors.
+      operationId: listInspectorsByEnvironment
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inspectorListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors/{inspectorId}:
+    get:
+      tags: [Inspectors]
+      summary: Get an inspector in environment context
+      description: |
+        Get the same global inspector, but in the context of this environment.
+        This inspectorId matches the global inspector from /v3/inspectors/{inspectorId}.
+      operationId: getInspectorInEnvironment
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inspectorGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # DATAPRINTS (environment-scoped inspector data)
+  # ============================================================================
+  /v3/environments/{environmentId}/inspectors/{inspectorId}/dataprints:
+    get:
+      tags: [Inspectors]
+      summary: List dataprints for an inspector in an environment
+      operationId: listDataprints
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/strictExpand"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Inspectors]
+      summary: Push data (create a dataprint)
+      description: |
+        Push data for this inspector in this environment. The data structure must conform 
+        to the metadata mapping configured via the /config endpoint.
+        
+        **Asynchronous Processing**: Dataprint processing happens asynchronously. This endpoint 
+        returns immediately with a job ID. You can:
+        - Poll the job status using GET /v3/jobs/{jobId}
+        - Provide a callbackUrl for one-time notification on completion
+        - Subscribe to webhooks for all dataprint events
+        
+        This endpoint uses the configVersion from the inspector's current config.
+        The request body only contains the data payload.
+      operationId: createDataprint
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+        - name: callbackUrl
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+          description: |
+            Optional HTTPS URL to receive a one-time POST notification when processing completes.
+            The callback will receive the same payload structure as the job status endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/dataprintCreateRequest"
+            examples:
+              tiered:
+                summary: Tiered data structure
+                value:
+                  clients:
+                    - id: "client_002"
+                      name: "Acme Manufacturing"
+                      devices:
+                        - hostname: "acme-dc01"
+                          type: "server"
+                          serial_number: "SRV-ACME-0001"
+                          ip_address: "10.10.0.10"
+                          os: "Windows Server 2022 Datacenter"
+              split:
+                summary: Split data structure
+                value:
+                  clients:
+                    - id: "client_002"
+                      name: "Acme Manufacturing"
+                  devices:
+                    - client_id: "client_002"
+                      hostname: "acme-cad-ws07"
+                      type: "workstation"
+                      serial_number: "WS-ACME-1007"
+                      ip_address: "10.10.10.57"
+                      os: "Windows 11 Pro 24H2"
+                      primary_user: "lchen@acmemfg.com"
+      responses:
+        "202":
+          description: Accepted - Processing asynchronously
+          headers:
+            Location:
+              description: URL to poll for job status
+              schema:
+                type: string
+                format: uri
+              examples:
+                - "https://api.liongard.example.com/v3/jobs/job_abc123xyz"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintJobResponse"
+        "400":
+          description: Validation failed - data does not match config schema
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "409":
+          description: Conflict - A job is already processing for this inspector in this environment
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: object
+                    required: [code, message]
+                    properties:
+                      code:
+                        type: string
+                        examples:
+                          - "CONCURRENT_JOB_CONFLICT"
+                      message:
+                        type: string
+                        examples:
+                          - "A dataprint job is already processing for inspector 'inspector_13' in environment 'env_8888'"
+                      details:
+                        type: object
+                        properties:
+                          existingJobId:
+                            type: string
+                            description: ID of the currently running job
+                            examples:
+                              - "job_existing123"
+                          existingJobStatus:
+                            type: string
+                            examples:
+                              - "processing"
+                          existingJobCreatedAt:
+                            type: string
+                            format: date-time
+                            examples:
+                              - "2024-02-06T10:28:00Z"
+                          suggestion:
+                            type: string
+                            examples:
+                              - "Wait for the existing job to complete or cancel it using DELETE /v3/jobs/job_existing123"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors/{inspectorId}/dataprints/{dataprintId}:
+    get:
+      tags: [Inspectors]
+      summary: Get a specific dataprint
+      operationId: getDataprint
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+        - $ref: "#/components/parameters/dataprintId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors/{inspectorId}/dataprints/latest:
+    get:
+      tags: [Inspectors]
+      summary: Get latest dataprint for an inspector in an environment
+      operationId: getLatestDataprint
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # DATAPRINT CONFIG (metadata mapping configuration)
+  # ============================================================================
+  /v3/environments/{environmentId}/inspectors/{inspectorId}/config:
+    get:
+      tags: [Inspectors]
+      summary: Get dataprint config for an inspector
+      description: |
+        Retrieve the metadata mapping configuration that defines how data is structured
+        when pushing to this inspector. This config is used by the POST /dataprints endpoint.
+      operationId: getDataprintConfig
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintConfigGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    put:
+      tags: [Inspectors]
+      summary: Set dataprint config for an inspector
+      description: |
+        Configure the metadata mapping for this inspector. This defines how the service
+        will parse data submitted via POST /dataprints.
+        
+        The configVersion is auto-incremented on each update.
+      operationId: upsertDataprintConfig
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/dataprintConfigUpsertRequest"
+            examples:
+              tiered:
+                summary: Tiered configuration
+                value:
+                  metadata:
+                    dataStructure: "tiered"
+                    environments:
+                      arrayPath: "$.clients[*]"
+                      namePath: "$.name"
+                      idPath: "$.id"
+                    assets:
+                      arrayPath: "$.devices[*]"
+                      namePath: "$.hostname"
+                      typePath: "$.type"
+                      uniqueIdPath: "$.serial_number"
+                    views:
+                      - type: "server"
+                        fields: ["hostname", "type", "ip_address", "os"]
+              split:
+                summary: Split configuration
+                value:
+                  metadata:
+                    dataStructure: "split"
+                    environments:
+                      arrayPath: "$.clients[*]"
+                      namePath: "$.name"
+                      idPath: "$.id"
+                    assets:
+                      arrayPath: "$.devices[*]"
+                      namePath: "$.hostname"
+                      typePath: "$.type"
+                      uniqueIdPath: "$.serial_number"
+                      environmentIdPath: "$.client_id"
+                    views:
+                      - type: "workstation"
+                        fields: ["hostname", "ip_address", "os", "primary_user"]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintConfigGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # JOBS (Asynchronous Job Tracking)
+  # ============================================================================
+  /v3/jobs/{jobId}:
+    get:
+      tags: [Jobs]
+      summary: Get job status
+      description: |
+        Get the status of an asynchronous job (e.g., dataprint processing).
+        Jobs are typically created by POST operations that return 202 Accepted.
+        
+        Poll this endpoint to track job progress. Once complete, the job includes
+        the final result (success or failure) with detailed information.
+      operationId: getJob
+      parameters:
+        - $ref: "#/components/parameters/jobId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/jobGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    delete:
+      tags: [Jobs]
+      summary: Cancel a job
+      description: |
+        Cancel a pending or processing job. Once cancelled, the job cannot be resumed.
+        
+        **Cancellation Behavior:**
+        - `pending` jobs: Removed from queue immediately
+        - `processing` jobs: Gracefully stopped (may take a few seconds)
+        - `completed`/`failed` jobs: Cannot be cancelled (returns 409)
+        
+        **Use Cases:**
+        - Stop a job that was submitted with incorrect data
+        - Cancel long-running operations
+        - Clear stuck jobs from the queue
+      operationId: cancelJob
+      parameters:
+        - $ref: "#/components/parameters/jobId"
+      responses:
+        "200":
+          description: OK - Job cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/jobGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "409":
+          description: Conflict - Job already completed or failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorResponse"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/jobs:
+    get:
+      tags: [Jobs]
+      summary: List jobs
+      description: |
+        List recent jobs for tracking and auditing purposes.
+        Useful for monitoring batch operations or debugging failed jobs.
+        
+        **Filter Examples:**
+        - `?filter=status==pending` - Pending jobs only
+        - `?filter=status=in=(pending,processing)` - Active jobs
+        - `?filter=environmentId==env_8888;inspectorId==inspector_13` - Specific inspector/environment
+        - `?filter=type==dataprint_processing;status==failed` - Failed dataprint jobs
+      operationId: listJobs
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/jobListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # META (API Capabilities)
+  # ============================================================================
+  /v3/meta/objects:
+    get:
+      tags: [Meta]
+      summary: List object capabilities
+      description: |
+        Discover filterable fields, expandable fields, and supported events for each object type.
+        Use this to build dynamic queries and webhook subscriptions.
+      operationId: listObjectCapabilities
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/objectCapabilitiesResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/meta/assets/types:
+    get:
+      tags: [Meta]
+      summary: List asset types and supported expansions
+      description: Discover asset types and which fields can be expanded for each type.
+      operationId: listAssetTypeCapabilities
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/assetTypeCapabilitiesResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # METRICS
+  # ============================================================================
+  /v3/metrics:
+    get:
+      tags: [Metrics]
+      summary: List metrics
+      description: |
+        Returns a list of metrics. Metrics are JMESPath expressions used to query
+        specific data from dataprints/inspections.
+      operationId: listMetrics
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/filter"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/metricListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Metrics]
+      summary: Create a metric
+      description: |
+        Creates a custom metric with a JMESPath query expression.
+        Metrics can be global or scoped to specific environments/inspectors.
+      operationId: createMetric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/metricCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/metricGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/metrics/{metricId}:
+    get:
+      tags: [Metrics]
+      summary: Get a metric
+      operationId: getMetric
+      parameters:
+        - $ref: "#/components/parameters/metricId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/metricGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    patch:
+      tags: [Metrics]
+      summary: Update a metric
+      description: Update a custom metric. System-provided metrics cannot be modified.
+      operationId: updateMetric
+      parameters:
+        - $ref: "#/components/parameters/metricId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/metricPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/metricGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    delete:
+      tags: [Metrics]
+      summary: Delete a metric
+      description: Delete a custom metric. System-provided metrics cannot be deleted.
+      operationId: deleteMetric
+      parameters:
+        - $ref: "#/components/parameters/metricId"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/metrics/evaluate:
+    post:
+      tags: [Metrics]
+      summary: Evaluate metrics across systems
+      description: |
+        Evaluate one or more metrics across multiple systems and return the results.
+        Useful for building custom reports or dashboards.
+        
+        **Rate Limit**: 100 requests per minute per API key.
+      operationId: evaluateMetrics
+      parameters:
+        - name: includeNonVisible
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Include metrics with display disabled
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/metricEvaluateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/metricEvaluateResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/systems/{systemId}/metrics:
+    get:
+      tags: [Metrics]
+      summary: Get all metric values for a system
+      description: |
+        Returns evaluated metric values for all enabled metrics for a specific system.
+        This is useful for retrieving comprehensive system metrics.
+      operationId: getSystemMetrics
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/systemId"
+        - name: includeNonVisible
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Include metrics with display disabled
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/systemMetricsResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  # ============================================================================
+  # WEBHOOKS
+  # ============================================================================
+  /v3/webhooks/subscriptions:
+    get:
+      tags: [Webhooks]
+      summary: List webhook subscriptions
+      operationId: listWebhookSubscriptions
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/webhookSubscriptionListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Webhooks]
+      summary: Create a webhook subscription
+      operationId: createWebhookSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/webhookSubscriptionCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/webhookSubscriptionGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/webhooks/subscriptions/{subscriptionId}:
+    get:
+      tags: [Webhooks]
+      summary: Get a webhook subscription
+      operationId: getWebhookSubscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/webhookSubscriptionGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    patch:
+      tags: [Webhooks]
+      summary: Update a webhook subscription
+      operationId: updateWebhookSubscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/webhookSubscriptionPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/webhookSubscriptionGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    delete:
+      tags: [Webhooks]
+      summary: Delete a webhook subscription
+      operationId: deleteWebhookSubscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+  parameters:
+    alertId:
+      name: alertId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique alert identifier
+
+    assetId:
+      name: assetId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique asset identifier
+
+    dataprintId:
+      name: dataprintId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique dataprint identifier
+
+    environmentId:
+      name: environmentId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique environment identifier
+
+    expand:
+      name: expand
+      in: query
+      required: false
+      schema:
+        type: array
+        items: { type: string }
+      style: form
+      explode: true
+      description: |
+        Dynamic expansions for nested fields. No expand-all wildcard supported.
+        Use /v3/meta endpoints to discover supported expansion values for each resource type.
+        
+        Example: expand=environment&expand=inspector
+
+    filter:
+      name: filter
+      in: query
+      required: false
+      schema: { type: string }
+      description: |
+        Filter results using RSQL (RESTful Service Query Language) syntax.
+        
+        **Operators:**
+        - `==` - Equal
+        - `!=` - Not equal
+        - `>` - Greater than
+        - `>=` - Greater than or equal
+        - `<` - Less than
+        - `<=` - Less than or equal
+        - `=in=` - In list (e.g., `status=in=(pending,processing)`)
+        - `=out=` - Not in list
+        - Wildcards: `*` for pattern matching (e.g., `name==*server*`)
+        
+        **Combinators:**
+        - `;` - AND
+        - `,` - OR
+        - `()` - Grouping
+        
+        **Examples:**
+        - `status==active`
+        - `priority==critical;status==open`
+        - `status=in=(pending,processing)`
+        - `createdAt>=2024-01-01;createdAt<2024-02-01`
+        - `name==*server*,name==*router*`
+        - `environmentId==env_8888;(status==open,status==in_progress)`
+        
+        Consult /v3/meta/objects to discover filterable fields per resource type.
+
+    identityId:
+      name: identityId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique identity identifier
+
+    inspectorId:
+      name: inspectorId
+      in: path
+      required: true
+      schema: { type: string }
+      description: |
+        Unique inspector identifier. This ID is global and consistent across environments.
+
+    jobId:
+      name: jobId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique job identifier
+
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100
+      description: Maximum number of results to return (1-1000)
+
+    metricId:
+      name: metricId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique metric identifier
+
+    offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Number of results to skip for pagination
+
+    sort:
+      name: sort
+      in: query
+      required: false
+      schema: { type: string }
+      description: |
+        Field name to sort by. Prefix with '-' for descending order.
+        
+        Examples:
+        - sort=createdAt (ascending)
+        - sort=-updatedAt (descending)
+
+    strictExpand:
+      name: strictExpand
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: |
+        If true, unsupported expand values return HTTP 422.
+        If false, unsupported expand values are ignored with warnings in response.
+
+    subscriptionId:
+      name: subscriptionId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique webhook subscription identifier
+
+    systemId:
+      name: systemId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Unique system identifier (from inspector dataprints)
+
+  responses:
+    badRequest:
+      description: Bad Request - invalid request format or parameters
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+    
+    notFound:
+      description: Not Found - resource does not exist
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+    
+    rateLimited:
+      description: Too Many Requests - rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Maximum requests allowed per window
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Requests remaining in current window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Unix timestamp when the rate limit resets
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+    
+    unauthorized:
+      description: Unauthorized - invalid or missing API key
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+    
+    unprocessableEntity:
+      description: Unprocessable Entity - request valid but cannot be processed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+
+  schemas:
+    # ========================================================================
+    # ALERTS
+    # ========================================================================
+    alert:
+      type: object
+      additionalProperties: false
+      required: [alertId, environmentId, name, status, updatedAt]
+      properties:
+        alertId: 
+          type: string
+          description: Unique alert identifier
+          examples:
+            - "alert_7586"
+        environmentId: 
+          type: string
+          description: Environment this alert belongs to
+          examples:
+            - "env_8888"
+        commonId: 
+          type: string
+          description: Common identifier for grouping related alerts (e.g., ticket system ID)
+          examples:
+            - "T20210920.00001"
+        category: 
+          type: string
+          description: Alert category or classification (e.g., security, compliance, performance)
+          examples:
+            - "security"
+        name: 
+          type: string
+          description: Alert title or summary
+          examples:
+            - "Critical vulnerability detected"
+          maxLength: 255
+        description: 
+          type: string
+          description: Detailed alert description
+          examples:
+            - "Multiple systems missing critical security patches"
+        priority: 
+          type: string
+          enum: [low, medium, high, critical]
+          description: Alert priority level
+          examples:
+            - "critical"
+        source: 
+          type: string
+          description: Source system or integration that created the alert
+          examples:
+            - "liongard-inspector"
+          maxLength: 100
+        owner: 
+          type: string
+          description: User ID or email of the person/team responsible for the alert
+          examples:
+            - "user@example.com"
+        percentComplete: 
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Progress percentage (0-100)
+          examples:
+            - 45
+          default: 0
+        autoClose: 
+          type: integer
+          minimum: 0
+          description: Days until auto-close (0 = disabled)
+          examples:
+            - 30
+          default: 0
+        status: 
+          type: string
+          enum: [open, in_progress, resolved, closed]
+          description: Current alert status
+          examples:
+            - "open"
+        roarStatus: 
+          type: integer
+          description: Internal ROAR system status code
+          examples:
+            - 0
+        keywords: 
+          type: string
+          description: Comma-separated keywords for search/filtering
+          examples:
+            - "security,patch,vulnerability"
+          maxLength: 500
+        startDate: 
+          type: string
+          format: date-time
+          description: Alert start timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-01-15T10:30:00Z"
+        dueDate: 
+          type: string
+          format: date-time
+          description: Alert due date (UTC, ISO 8601)
+          examples:
+            - "2024-02-15T10:30:00Z"
+        externalId: 
+          type: integer
+          description: External system identifier (e.g., PSA ticket number)
+          examples:
+            - 12345
+        inspectorId: 
+          type: string
+          description: Inspector that generated this alert (if applicable)
+          examples:
+            - "inspector_13"
+        timelineId:
+          type: string
+          description: Timeline/dataprint ID that triggered this alert
+          examples:
+            - "timeline_1294715"
+        launchpointId:
+          type: string
+          description: Launchpoint (inspection configuration) that generated this alert
+          examples:
+            - "launchpoint_18700"
+        visible: 
+          type: boolean
+          description: Whether alert is visible in UI
+          examples:
+            - true
+          default: true
+        createdBy: 
+          type: string
+          description: User ID or email who created the alert
+          examples:
+            - "system@liongard.com"
+        createdAt: 
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-01-15T10:30:00Z"
+        updatedBy: 
+          type: string
+          description: User ID or email who last updated the alert
+          examples:
+            - "user@example.com"
+        updatedAt: 
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-01-20T14:45:00Z"
+        closedAt:
+          type: string
+          format: date-time
+          description: When the alert was closed (UTC, ISO 8601)
+          examples:
+            - "2024-01-25T09:00:00Z"
+        closedBy:
+          type: string
+          description: User ID or email who closed the alert
+          examples:
+            - "user@example.com"
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional alert-specific data and metadata
+          examples:
+            - affectedSystems: ["system_1", "system_2"]
+              severity_score: 8.5
+
+    alertCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [environmentId, name, status]
+      properties:
+        environmentId: { type: string }
+        commonId: { type: string }
+        category: { type: string }
+        name: { type: string }
+        description: { type: string }
+        priority: 
+          type: string
+          enum: [low, medium, high, critical]
+        source: { type: string }
+        owner: { type: string }
+        percentComplete: 
+          type: integer
+          minimum: 0
+          maximum: 100
+        autoClose: { type: integer }
+        status: 
+          type: string
+          enum: [open, in_progress, resolved, closed]
+        roarStatus: { type: integer }
+        keywords: { type: string }
+        startDate: 
+          type: string
+          format: date-time
+        dueDate: 
+          type: string
+          format: date-time
+        externalId: { type: integer }
+        inspectorId: { type: string }
+        visible: { type: boolean }
+        details:
+          type: object
+          additionalProperties: true
+
+    alertPatchRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        Update alert fields. Set status to 'closed' or 'resolved' to close the alert.
+        When closing, closedAt and closedBy are automatically set if not provided.
+      properties:
+        commonId: { type: string }
+        category: { type: string }
+        name: { type: string, maxLength: 255 }
+        description: { type: string }
+        priority: 
+          type: string
+          enum: [low, medium, high, critical]
+        source: { type: string, maxLength: 100 }
+        owner: { type: string }
+        percentComplete: 
+          type: integer
+          minimum: 0
+          maximum: 100
+        autoClose: { type: integer, minimum: 0 }
+        status: 
+          type: string
+          enum: [open, in_progress, resolved, closed]
+          description: Set to 'closed' or 'resolved' to close the alert
+        roarStatus: { type: integer }
+        keywords: { type: string, maxLength: 500 }
+        startDate: 
+          type: string
+          format: date-time
+        dueDate: 
+          type: string
+          format: date-time
+        externalId: { type: integer }
+        inspectorId: { type: string }
+        visible: { type: boolean }
+        details:
+          type: object
+          additionalProperties: true
+
+    alertGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/alert" }
+
+    alertListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/alert" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+        warnings:
+          type: array
+          items: { type: string }
+          description: Non-fatal warnings (e.g., ignored expand parameters)
+
+    # ========================================================================
+    # ASSETS
+    # ========================================================================
+    asset:
+      type: object
+      additionalProperties: false
+      required: [assetId, environmentId, assetType, name, updatedAt]
+      properties:
+        assetId: 
+          type: string
+          description: Unique asset identifier
+          examples:
+            - "asset_f67ed3a3"
+        environmentId: 
+          type: string
+          description: Environment this asset belongs to
+          examples:
+            - "env_4"
+        assetType: 
+          type: string
+          description: Asset type (server, workstation, firewall, router, etc.)
+          examples:
+            - "server"
+        name: 
+          type: string
+          description: Asset display name (hostname, FQDN, or friendly name)
+          examples:
+            - "dc01.contoso.com"
+          maxLength: 255
+        alias:
+          type: string
+          description: Alternative name or friendly identifier
+          examples:
+            - "CN-DC01"
+        status: 
+          type: string
+          enum: [active, inactive, idle, standby, decommissioned]
+          description: Asset operational status
+          examples:
+            - "active"
+        inventoryState:
+          type: string
+          enum: [inventory, archive, discovery]
+          description: |
+            Asset inventory state:
+            - inventory: Active tracked asset
+            - archive: Archived/historical asset
+            - discovery: Discovered but not yet inventoried
+          examples:
+            - "inventory"
+        category:
+          type: string
+          enum: [compute, network, iot-printer, storage, security, telephony]
+          description: High-level asset category
+          examples:
+            - "compute"
+        class:
+          type: string
+          enum: [critical, standard, low]
+          description: Asset criticality classification
+          examples:
+            - "critical"
+        role:
+          type: string
+          enum: [domain-directory, web, email, application, vm-host, vm-guest, pbx, voip, dns, sql, backup, user-device, firewall, router, switch]
+          description: Specific role or function of the asset
+          examples:
+            - "domain-directory"
+        location:
+          type: string
+          description: Physical or logical location
+          examples:
+            - "Main Office - Server Room A"
+        locationManaged:
+          type: boolean
+          description: Whether location is actively managed
+          examples:
+            - true
+        physical:
+          type: boolean
+          description: Physical device (true) vs virtual (false)
+          examples:
+            - true
+        hostServer:
+          type: string
+          description: Host server for virtual machines
+          examples:
+            - "RDSHOST-CN"
+        clusterName:
+          type: string
+          description: Cluster membership
+          examples:
+            - "Main-Cluster"
+        dataCenter:
+          type: string
+          description: Data center location
+          examples:
+            - "CyrusOne Dallas"
+        manufacturer:
+          type: string
+          description: Hardware manufacturer
+          examples:
+            - "Dell"
+        model:
+          type: string
+          description: Hardware model
+          examples:
+            - "PowerEdge R740"
+        serialNumber:
+          type: string
+          description: Hardware serial number
+          examples:
+            - "SRV-12345"
+        assetTagNumber:
+          type: string
+          description: Organization asset tag
+          examples:
+            - "CN-45322"
+        operatingSystem:
+          type: string
+          description: Operating system
+          examples:
+            - "Windows Server 2022 Datacenter"
+        osVersion:
+          type: string
+          description: OS version details
+          examples:
+            - "21H2"
+        ipAddress:
+          type: string
+          description: Primary IP address
+          examples:
+            - "10.0.0.10"
+        macAddress:
+          type: string
+          description: Primary MAC address
+          examples:
+            - "00:1A:2B:3C:4D:5E"
+        managedDevice:
+          type: boolean
+          description: Whether device is under management
+          examples:
+            - true
+        purpose:
+          type: string
+          description: Business purpose or description
+          examples:
+            - "Primary Active Directory Domain Controller"
+        purchaseDate:
+          type: string
+          format: date-time
+          description: Purchase date (UTC, ISO 8601)
+          examples:
+            - "2023-03-31T00:00:00Z"
+        warrantyExpiration:
+          type: string
+          format: date-time
+          description: Warranty expiration (UTC, ISO 8601)
+          examples:
+            - "2026-03-31T00:00:00Z"
+        eolDate:
+          type: string
+          format: date-time
+          description: End of life date (UTC, ISO 8601)
+          examples:
+            - "2027-03-31T00:00:00Z"
+        isManual:
+          type: boolean
+          description: Manually created vs discovered by inspector
+          examples:
+            - false
+        inspectorId:
+          type: string
+          description: Inspector that discovered this asset
+          examples:
+            - "inspector_13"
+        systemId:
+          type: string
+          description: Associated system ID (if discovered)
+          examples:
+            - "system_3454"
+        lastSeenAt:
+          type: string
+          format: date-time
+          description: Last seen/verified timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:00Z"
+        createdAt: 
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-01-15T10:30:00Z"
+        updatedAt: 
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:00Z"
+        version: 
+          type: integer
+          description: Optimistic locking version number
+          examples:
+            - 5
+
+    assetGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/asset" }
+
+    assetListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/asset" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+        warnings:
+          type: array
+          items: { type: string }
+
+    assetTypeCapabilities:
+      type: object
+      additionalProperties: false
+      required: [assetType, expandableFields]
+      properties:
+        assetType: 
+          type: string
+          description: Asset type identifier
+        expandableFields:
+          type: array
+          items: { type: string }
+          description: Fields that can be expanded for this asset type
+
+    assetTypeCapabilitiesResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/assetTypeCapabilities" }
+
+    # ========================================================================
+    # DATAPRINTS
+    # ========================================================================
+    dataprint:
+      type: object
+      additionalProperties: false
+      required: [dataprintId, inspectorId, environmentId, capturedAt, updatedAt]
+      properties:
+        dataprintId: 
+          type: string
+          description: Unique dataprint identifier
+        inspectorId: 
+          type: string
+          description: Inspector that created this dataprint
+        environmentId:
+          type: string
+          description: Environment this dataprint belongs to
+        capturedAt: 
+          type: string
+          format: date-time
+          description: When the data was captured (UTC, ISO 8601)
+        updatedAt: 
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+        version: 
+          type: integer
+          description: Dataprint version number
+        data:
+          type: object
+          additionalProperties: true
+          description: The actual data payload (structure defined by config metadata)
+
+    dataprintConfig:
+      type: object
+      additionalProperties: false
+      required: [configVersion, environmentId, inspectorId, metadata, updatedAt]
+      properties:
+        configVersion: 
+          type: integer
+          minimum: 1
+          description: Auto-incremented config version (for optimistic locking)
+        environmentId: 
+          type: string
+          description: Environment this config applies to
+        inspectorId: 
+          type: string
+          description: Inspector this config applies to
+        metadata: 
+          $ref: "#/components/schemas/dataprintMetadata"
+        createdAt: 
+          type: string
+          format: date-time
+          description: Config creation timestamp (UTC, ISO 8601)
+        updatedAt: 
+          type: string
+          format: date-time
+          description: Config last update timestamp (UTC, ISO 8601)
+
+    dataprintConfigGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/dataprintConfig" }
+
+    dataprintConfigUpsertRequest:
+      type: object
+      additionalProperties: false
+      required: [metadata]
+      properties:
+        metadata: { $ref: "#/components/schemas/dataprintMetadata" }
+
+    dataprintCreateRequest:
+      type: object
+      additionalProperties: true
+      description: |
+        Raw data payload conforming to the metadata mapping configured via /config endpoint.
+        The structure depends on the dataStructure setting (tiered or split).
+        
+        This is your source data - the service does not prescribe its schema beyond 
+        what you map via metadata JSONPaths.
+
+    dataprintGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/dataprint" }
+
+    dataprintListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/dataprint" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+        warnings:
+          type: array
+          items: { type: string }
+
+    # ========================================================================
+    # ENVIRONMENTS
+    # ========================================================================
+    environment:
+      type: object
+      additionalProperties: false
+      required: [environmentId, name, updatedAt]
+      properties:
+        environmentId: 
+          type: string
+          description: Unique environment identifier
+        name: 
+          type: string
+          description: Environment name
+        description: 
+          type: string
+          description: Environment description
+        parentEnvironmentId: 
+          type: string
+          description: Parent environment ID for hierarchical structures
+        shortName: 
+          type: string
+          description: Abbreviated environment name
+        tier: 
+          type: string
+          enum: [production, staging, development, test]
+          description: Environment tier classification
+        status: 
+          type: string
+          enum: [active, inactive, archived]
+          description: Environment status
+        createdAt: 
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC, ISO 8601)
+        updatedAt: 
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+        version: 
+          type: integer
+          description: Optimistic locking version
+
+    environmentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        parentEnvironmentId: { type: string }
+        shortName: { type: string }
+        tier: 
+          type: string
+          enum: [production, staging, development, test]
+
+    environmentPatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        description: { type: string }
+        parentEnvironmentId: { type: string }
+        shortName: { type: string }
+        tier: 
+          type: string
+          enum: [production, staging, development, test]
+        status:
+          type: string
+          enum: [active, inactive, archived]
+
+    environmentGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/environment" }
+
+    environmentListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/environment" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    # ========================================================================
+    # ERROR RESPONSES
+    # ========================================================================
+    errorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code: 
+              type: string
+              description: Machine-readable error code
+            message: 
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              additionalProperties: true
+              description: Additional error context
+
+    # ========================================================================
+    # IDENTITIES
+    # ========================================================================
+    identity:
+      type: object
+      additionalProperties: false
+      required: [identityId, environmentId, displayName, updatedAt]
+      properties:
+        identityId: 
+          type: string
+          description: Unique identity identifier
+          examples:
+            - "identity_f67ed3a3"
+        environmentId: 
+          type: string
+          description: Environment this identity belongs to
+          examples:
+            - "env_4"
+        identityType: 
+          type: string
+          enum: [user, admin, service, guest, shared, system, application]
+          description: |
+            Type of identity:
+            - user: Standard user account
+            - admin: Administrative account
+            - service: Service account
+            - guest: Guest account
+            - shared: Shared mailbox/resource
+            - system: System account
+            - application: Application identity
+          examples:
+            - "user"
+        displayName: 
+          type: string
+          description: Human-readable display name
+          examples:
+            - "John Smith"
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          description: Email address
+          examples:
+            - "john.smith@contoso.com"
+        username:
+          type: string
+          description: Username or login name
+          examples:
+            - "jsmith"
+        upn:
+          type: string
+          description: User Principal Name (UPN)
+          examples:
+            - "jsmith@contoso.com"
+        department:
+          type: string
+          description: Department or organizational unit
+          examples:
+            - "Engineering"
+        jobTitle:
+          type: string
+          description: Job title
+          examples:
+            - "Senior Engineer"
+        manager:
+          type: string
+          description: Manager's identity ID or email
+          examples:
+            - "manager@contoso.com"
+        status: 
+          type: string
+          enum: [active, inactive, suspended, disabled, expired, deactivated, deleted, pending-activation]
+          description: |
+            Identity status:
+            - active: Active and enabled
+            - inactive: Temporarily inactive
+            - suspended: Administratively suspended
+            - disabled: Disabled account
+            - expired: Expired credentials
+            - deactivated: Deactivated account
+            - deleted: Marked for deletion
+            - pending-activation: Awaiting activation
+          examples:
+            - "active"
+        inventoryState:
+          type: string
+          enum: [inventory, archive, discovery]
+          description: |
+            Identity inventory state:
+            - inventory: Active tracked identity
+            - archive: Archived/historical identity
+            - discovery: Discovered but not yet inventoried
+          examples:
+            - "inventory"
+        location:
+          type: string
+          description: Physical or organizational location
+          examples:
+            - "Houston Office"
+        isLocationManaged:
+          type: boolean
+          description: Whether location is actively managed
+          examples:
+            - true
+        privileged:
+          type: boolean
+          description: Whether identity has privileged/elevated permissions
+          examples:
+            - false
+        mfaEnabled:
+          type: boolean
+          description: Multi-factor authentication enabled
+          examples:
+            - true
+        lastLogin:
+          type: string
+          format: date-time
+          description: Last login timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-05T14:30:00Z"
+        passwordLastSet:
+          type: string
+          format: date-time
+          description: Password last set timestamp (UTC, ISO 8601)
+          examples:
+            - "2023-11-15T09:00:00Z"
+        passwordExpires:
+          type: string
+          format: date-time
+          description: Password expiration timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-05-15T09:00:00Z"
+        accountExpires:
+          type: string
+          format: date-time
+          description: Account expiration timestamp (UTC, ISO 8601)
+          examples:
+            - "2025-01-15T00:00:00Z"
+        isManual:
+          type: boolean
+          description: Manually created vs discovered by inspector
+          examples:
+            - false
+        inspectorId:
+          type: string
+          description: Inspector that discovered this identity
+          examples:
+            - "inspector_15"
+        systemId:
+          type: string
+          description: Associated system ID (if discovered)
+          examples:
+            - "system_4521"
+        sourceSystem:
+          type: string
+          description: Source identity provider (Azure AD, Active Directory, etc.)
+          examples:
+            - "Azure Active Directory"
+        externalId:
+          type: string
+          description: External system identifier
+          examples:
+            - "user_12345"
+        lastSeenAt:
+          type: string
+          format: date-time
+          description: Last seen/verified timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:00Z"
+        createdAt: 
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-01-15T10:30:00Z"
+        updatedAt: 
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:00Z"
+        version: 
+          type: integer
+          description: Optimistic locking version number
+          examples:
+            - 3
+
+    identityGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/identity" }
+
+    identityListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/identity" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+        warnings:
+          type: array
+          items: { type: string }
+
+    # ========================================================================
+    # INGESTION METADATA (from Push API spec)
+    # ========================================================================
+    dataprintAssetsMetadata:
+      type: object
+      additionalProperties: false
+      required: [arrayPath, namePath, typePath, uniqueIdPath]
+      properties:
+        arrayPath: 
+          type: string
+          description: |
+            JSONPath to the array of assets.
+            - Tiered: Relative to each environment object (e.g., $.devices[*])
+            - Split: Absolute from data root (e.g., $.devices[*])
+        namePath: 
+          type: string
+          description: JSONPath (relative to asset) to the display name field (e.g., $.hostname)
+        typePath: 
+          type: string
+          description: JSONPath (relative to asset) to the type field (e.g., $.type)
+        uniqueIdPath: 
+          type: string
+          description: JSONPath (relative to asset) to a stable unique identifier (e.g., $.serial_number)
+        environmentIdPath: 
+          type: string
+          description: |
+            JSONPath (relative to asset) that yields the environment ID.
+            Required when dataStructure is "split". Links asset to environment.
+
+    dataprintDataStructure:
+      type: string
+      enum: [tiered, split]
+      description: |
+        Data organization pattern:
+        - tiered: Assets nested inside each environment object
+        - split: Environments and assets in separate arrays, linked via environmentIdPath
+
+    dataprintEnvironmentsMetadata:
+      type: object
+      additionalProperties: false
+      required: [arrayPath, idPath, namePath]
+      properties:
+        arrayPath: 
+          type: string
+          description: JSONPath to the array of environments in the data payload (e.g., $.clients[*])
+        namePath: 
+          type: string
+          description: JSONPath (relative to environment) to the name field (e.g., $.name)
+        idPath: 
+          type: string
+          description: JSONPath (relative to environment) to stable ID field (e.g., $.id)
+
+    dataprintMetadata:
+      type: object
+      additionalProperties: false
+      required: [dataStructure, environments, assets]
+      properties:
+        dataStructure: { $ref: "#/components/schemas/dataprintDataStructure" }
+        environments: { $ref: "#/components/schemas/dataprintEnvironmentsMetadata" }
+        assets: { $ref: "#/components/schemas/dataprintAssetsMetadata" }
+        views:
+          type: array
+          items: { $ref: "#/components/schemas/dataprintView" }
+          description: Optional declarative tables for downstream UI
+
+    dataprintResultResponse:
+      type: object
+      additionalProperties: false
+      required: [accepted, environmentsProcessed, assetsProcessed, warnings, errors]
+      properties:
+        accepted: 
+          type: boolean
+          description: Whether the data was accepted for processing
+        environmentsProcessed: 
+          type: integer
+          minimum: 0
+          description: Number of environments successfully processed
+        assetsProcessed: 
+          type: integer
+          minimum: 0
+          description: Number of assets successfully processed
+        warnings:
+          type: array
+          items: { type: string }
+          description: Non-fatal warnings during processing
+        errors:
+          type: array
+          items: { type: string }
+          description: Fatal errors encountered during processing
+
+    dataprintView:
+      type: object
+      additionalProperties: false
+      required: [type, fields]
+      properties:
+        type: 
+          type: string
+          description: Arbitrary grouping label (e.g., server, switch, workstation)
+        fields:
+          type: array
+          items: { type: string }
+          description: Field names expected on resolved asset objects (e.g., hostname, ip_address, os)
+
+    # ========================================================================
+    # INSPECTORS
+    # ========================================================================
+    inspector:
+      type: object
+      additionalProperties: false
+      required: [inspectorId, name, updatedAt]
+      properties:
+        inspectorId: 
+          type: string
+          description: Unique global inspector identifier (same across all environments)
+          examples:
+            - "inspector_13"
+        name: 
+          type: string
+          description: Inspector system name (kebab-case identifier)
+          examples:
+            - "active-directory-inspector"
+          maxLength: 100
+        alias:
+          type: string
+          description: Human-friendly display name
+          examples:
+            - "Active Directory"
+        description:
+          type: string
+          description: Inspector description and capabilities
+          examples:
+            - "Inspects Active Directory, returning domain configuration, security policies, and user information"
+        category:
+          type: string
+          enum: [infrastructure, security, cloud, networking, appservices, database, identity, backup]
+          description: Inspector category classification
+          examples:
+            - "identity"
+        published:
+          type: boolean
+          description: Whether inspector is published and available
+          examples:
+            - true
+          default: false
+        publishedStatus:
+          type: string
+          enum: [production, beta, alpha, deprecated]
+          description: Publication status
+          examples:
+            - "production"
+        author:
+          type: string
+          description: Inspector author/vendor
+          examples:
+            - "Liongard, Inc."
+        contactEmail:
+          type: string
+          format: email
+          description: Support contact email
+          examples:
+            - "support@liongard.com"
+        logo:
+          type: string
+          format: uri
+          description: Logo image URL
+          examples:
+            - "https://resources.static.liongard.com/images/active-directory-inspector.png"
+        icon:
+          type: string
+          format: uri
+          description: Icon image URL
+          examples:
+            - "https://resources.static.liongard.com/images/icons/microsoft-windows-icon.png"
+        helpLink:
+          type: string
+          format: uri
+          description: Documentation URL
+          examples:
+            - "https://docs.liongard.com/docs/active-directory-inspection-setup"
+        status: 
+          type: string
+          enum: [active, inactive, disabled, deprecated]
+          description: Inspector operational status
+          examples:
+            - "active"
+        lastRunAt: 
+          type: string
+          format: date-time
+          description: Last execution timestamp across all environments (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T08:15:00Z"
+        defaultFrequency:
+          type: object
+          description: Default run frequency recommendation
+          properties:
+            type:
+              type: string
+              enum: [hours, days, weeks]
+              examples:
+                - "days"
+            interval:
+              type: integer
+              examples:
+                - 1
+        constraints:
+          type: object
+          description: Inspector execution constraints and requirements
+          properties:
+            tiers:
+              type: array
+              items:
+                type: string
+                enum: [production, staging, development, test]
+              description: Allowed environment tiers
+              examples:
+                - ["production"]
+            platform:
+              type: array
+              items:
+                type: string
+                enum: [windows, linux, macos, cloud]
+              description: Required agent platforms
+              examples:
+                - ["windows"]
+            frequency:
+              type: object
+              properties:
+                maxIntervalType:
+                  type: string
+                  enum: [hours, days]
+                  examples:
+                    - "hours"
+                maxIntervalFrequency:
+                  type: integer
+                  examples:
+                    - 8
+        enhancedBilling:
+          type: boolean
+          description: Whether inspector has enhanced billing requirements
+          examples:
+            - false
+        diagnosticsEnabled:
+          type: boolean
+          description: Whether diagnostics/debug logging is enabled
+          examples:
+            - false
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC, ISO 8601)
+          examples:
+            - "2021-09-10T19:21:03Z"
+        updatedAt: 
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:00Z"
+        version: 
+          type: integer
+          description: Optimistic locking version number
+          examples:
+            - 12
+
+    inspectorCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        status:
+          type: string
+          enum: [active, inactive, disabled]
+          default: active
+
+    inspectorPatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        description: { type: string }
+        status:
+          type: string
+          enum: [active, inactive, disabled]
+
+    inspectorGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/inspector" }
+
+    inspectorListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/inspector" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    # ========================================================================
+    # JOBS (Asynchronous Job Tracking)
+    # ========================================================================
+    job:
+      type: object
+      additionalProperties: false
+      required: [jobId, type, status, createdAt, updatedAt]
+      properties:
+        jobId:
+          type: string
+          description: Unique job identifier
+          examples:
+            - "job_abc123xyz"
+        type:
+          type: string
+          enum: [dataprint_processing, metric_evaluation, bulk_operation]
+          description: Type of job
+          examples:
+            - "dataprint_processing"
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+          description: Current job status
+          examples:
+            - "completed"
+        progress:
+          type: object
+          description: Job progress information
+          properties:
+            current:
+              type: integer
+              minimum: 0
+              description: Current progress step
+              examples:
+                - 2
+            total:
+              type: integer
+              minimum: 0
+              description: Total steps
+              examples:
+                - 3
+            percentage:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: Progress percentage
+              examples:
+                - 66
+            message:
+              type: string
+              description: Human-readable progress message
+              examples:
+                - "Processing environments (2/3)"
+        resourceType:
+          type: string
+          description: Type of resource this job is processing
+          examples:
+            - "dataprint"
+        resourceId:
+          type: string
+          description: ID of the resource being processed
+          examples:
+            - "dataprint_xyz789"
+        environmentId:
+          type: string
+          description: Environment context
+          examples:
+            - "env_8888"
+        inspectorId:
+          type: string
+          description: Inspector context (for dataprint jobs)
+          examples:
+            - "inspector_13"
+        callbackUrl:
+          type: string
+          format: uri
+          description: Optional callback URL for completion notification
+          examples:
+            - "https://partner.example.com/webhooks/dataprint-complete"
+        callbackAttempts:
+          type: integer
+          description: Number of callback delivery attempts made
+          examples:
+            - 1
+        callbackLastAttempt:
+          type: string
+          format: date-time
+          description: Last callback attempt timestamp
+          examples:
+            - "2024-02-06T10:30:15Z"
+        result:
+          type: object
+          description: Job result (populated when status is completed or failed)
+          additionalProperties: true
+          examples:
+            - accepted: true
+              environmentsProcessed: 1
+              assetsProcessed: 5
+              warnings: []
+              errors: []
+        error:
+          type: object
+          description: Error details (populated when status is failed)
+          properties:
+            code:
+              type: string
+              examples:
+                - "VALIDATION_ERROR"
+            message:
+              type: string
+              examples:
+                - "Invalid JSONPath in assets.uniqueIdPath"
+            details:
+              type: object
+              additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Job creation timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:15Z"
+        startedAt:
+          type: string
+          format: date-time
+          description: Processing start timestamp
+          examples:
+            - "2024-02-06T10:30:01Z"
+        completedAt:
+          type: string
+          format: date-time
+          description: Completion timestamp
+          examples:
+            - "2024-02-06T10:30:15Z"
+        estimatedCompletionAt:
+          type: string
+          format: date-time
+          description: Estimated completion time
+          examples:
+            - "2024-02-06T10:32:00Z"
+
+    jobGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/job" }
+
+    jobListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/job" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    dataprintJobResponse:
+      type: object
+      additionalProperties: false
+      required: [jobId, status, message]
+      properties:
+        jobId:
+          type: string
+          description: Job identifier for tracking
+          examples:
+            - "job_abc123xyz"
+        status:
+          type: string
+          enum: [pending, processing]
+          description: Initial job status
+          examples:
+            - "pending"
+        message:
+          type: string
+          description: Human-readable message
+          examples:
+            - "Dataprint accepted for processing"
+        estimatedCompletionSeconds:
+          type: integer
+          description: Estimated processing time in seconds
+          examples:
+            - 120
+        pollUrl:
+          type: string
+          format: uri
+          description: URL to poll for job status
+          examples:
+            - "https://api.liongard.example.com/v3/jobs/job_abc123xyz"
+        callbackUrl:
+          type: string
+          format: uri
+          description: Callback URL if provided
+          examples:
+            - "https://partner.example.com/webhooks/dataprint-complete"
+
+    # ========================================================================
+    # METRICS
+    # ========================================================================
+    metric:
+      type: object
+      additionalProperties: false
+      required: [metricId, name, inspectorId, updatedAt]
+      properties:
+        metricId:
+          type: string
+          description: Unique metric identifier
+          examples:
+            - "metric_1"
+        uuid:
+          type: string
+          format: uuid
+          description: UUID for external reference
+          examples:
+            - "aa4eef4d-3dc5-4b3d-9d8a-00c1d9b68065"
+        name:
+          type: string
+          description: Metric name
+          examples:
+            - "Active Directory: Count of Joined Computers"
+          maxLength: 255
+        description:
+          type: string
+          description: Detailed metric description
+          examples:
+            - "Number of computers joined to this Active Directory domain (servers and workstations)"
+        inspectorId:
+          type: string
+          description: Inspector this metric applies to
+          examples:
+            - "inspector_13"
+        environmentId:
+          type: string
+          description: Environment scope (null for global metrics)
+          examples:
+            - "env_8888"
+        queries:
+          type: array
+          description: JMESPath queries for different inspector versions
+          items:
+            type: object
+            required: [query, inspectorVersionId]
+            properties:
+              query:
+                type: string
+                description: JMESPath expression to evaluate
+                examples:
+                  - "length(Computers)"
+              inspectorVersionId:
+                type: string
+                description: Inspector version this query applies to
+                examples:
+                  - "version_26"
+        metricDisplay:
+          type: boolean
+          description: Whether metric is displayed in UI by default
+          examples:
+            - true
+          default: true
+        changesEnabled:
+          type: boolean
+          description: Whether change detection is enabled for this metric
+          examples:
+            - true
+          default: false
+        isCustom:
+          type: boolean
+          description: Custom metric (true) vs system-provided (false)
+          examples:
+            - false
+        hasActiveAlertRule:
+          type: boolean
+          description: Whether this metric has active alert rules
+          examples:
+            - true
+        belongsToChangeRule:
+          type: boolean
+          description: Whether this metric belongs to a change detection rule
+          examples:
+            - false
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC, ISO 8601)
+          examples:
+            - "2021-09-10T19:21:03Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:00Z"
+
+    metricCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, inspectorId, queries]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          examples:
+            - "Active Directory: Count of Joined Computers"
+        description:
+          type: string
+          examples:
+            - "Number of computers joined to this Active Directory domain"
+        inspectorId:
+          type: string
+          examples:
+            - "inspector_13"
+        environmentId:
+          type: string
+          description: Scope to specific environment (omit for global)
+          examples:
+            - "env_8888"
+        queries:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [query, inspectorVersionId]
+            properties:
+              query:
+                type: string
+                examples:
+                  - "length(Computers)"
+              inspectorVersionId:
+                type: string
+                examples:
+                  - "version_26"
+        metricDisplay:
+          type: boolean
+          default: true
+        changesEnabled:
+          type: boolean
+          default: false
+
+    metricPatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        queries:
+          type: array
+          items:
+            type: object
+            required: [query, inspectorVersionId]
+            properties:
+              query:
+                type: string
+              inspectorVersionId:
+                type: string
+        metricDisplay:
+          type: boolean
+        changesEnabled:
+          type: boolean
+
+    metricGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/metric" }
+
+    metricListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/metric" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    metricEvaluateRequest:
+      type: object
+      additionalProperties: false
+      required: [metrics, pagination]
+      properties:
+        metrics:
+          type: array
+          description: Metric IDs or UUIDs to evaluate
+          minItems: 1
+          items:
+            type: string
+          examples:
+            - ["metric_1", "aa4eef4d-3dc5-4b3d-9d8a-00c1d9b68065"]
+        filters:
+          type: array
+          description: Filter results by environment, system, etc.
+          items:
+            type: object
+            required: [field, op, value]
+            properties:
+              field:
+                type: string
+                enum: [environmentId, environmentName, systemId, systemName, inspectorId]
+                examples:
+                  - "environmentId"
+              op:
+                type: string
+                enum: [equal_to, contains, does_not_contain, matches_exactly, starts_with, ends_with]
+                examples:
+                  - "equal_to"
+              value:
+                oneOf:
+                  - type: string
+                  - type: integer
+                  - type: array
+                    items:
+                      oneOf:
+                        - type: string
+                        - type: integer
+                examples:
+                  - "env_8888"
+        sorting:
+          type: array
+          items:
+            type: object
+            required: [field, direction]
+            properties:
+              field:
+                type: string
+                enum: [metricName, environmentName, systemName, metricId, environmentId, systemId]
+                examples:
+                  - "environmentName"
+              direction:
+                type: string
+                enum: [asc, desc]
+                examples:
+                  - "asc"
+        pagination:
+          type: object
+          required: [limit, offset]
+          properties:
+            limit:
+              type: integer
+              minimum: 1
+              maximum: 1000
+              examples:
+                - 25
+            offset:
+              type: integer
+              minimum: 0
+              examples:
+                - 0
+        date:
+          type: string
+          format: date-time
+          description: Evaluation date (defaults to latest dataprint if omitted)
+          examples:
+            - "2024-02-06T00:00:00Z"
+
+    metricEvaluateResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [systemId, metricId, value]
+            properties:
+              systemId:
+                type: string
+                examples:
+                  - "system_3517"
+              systemName:
+                type: string
+                examples:
+                  - "Active Directory - Contoso"
+              environmentId:
+                type: string
+                examples:
+                  - "env_8888"
+              environmentName:
+                type: string
+                examples:
+                  - "Contoso Nation"
+              inspectorId:
+                type: string
+                examples:
+                  - "inspector_13"
+              inspectorName:
+                type: string
+                examples:
+                  - "active-directory-inspector"
+              metricId:
+                type: string
+                examples:
+                  - "metric_1"
+              metricUuid:
+                type: string
+                format: uuid
+                examples:
+                  - "aa4eef4d-3dc5-4b3d-9d8a-00c1d9b68065"
+              metricName:
+                type: string
+                examples:
+                  - "Active Directory: Count of Joined Computers"
+              timelineId:
+                type: string
+                description: Timeline/dataprint ID from which this value was evaluated
+                examples:
+                  - "timeline_1332180"
+              evaluatedAt:
+                type: string
+                format: date-time
+                description: When the dataprint was captured
+                examples:
+                  - "2024-02-06T10:30:00Z"
+              value:
+                description: Evaluated metric value (type varies based on metric)
+                oneOf:
+                  - type: string
+                  - type: number
+                  - type: integer
+                  - type: boolean
+                  - type: array
+                  - type: object
+                examples:
+                  - 7
+              error:
+                type: string
+                description: Error message if evaluation failed
+                examples:
+                  - "JMESPath query failed: invalid syntax"
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    systemMetricsResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [systemId, metrics]
+          properties:
+            systemId:
+              type: string
+              examples:
+                - "system_3517"
+            systemName:
+              type: string
+              examples:
+                - "Active Directory - Contoso"
+            environmentId:
+              type: string
+              examples:
+                - "env_8888"
+            environmentName:
+              type: string
+              examples:
+                - "Contoso Nation"
+            inspectorId:
+              type: string
+              examples:
+                - "inspector_13"
+            latestTimeline:
+              type: string
+              description: Latest timeline/dataprint ID
+              examples:
+                - "timeline_1332180"
+            evaluatedAt:
+              type: string
+              format: date-time
+              description: When the latest dataprint was captured
+              examples:
+                - "2024-02-06T10:30:00Z"
+            metrics:
+              type: array
+              description: All evaluated metrics for this system
+              items:
+                type: object
+                required: [metricId, metricName, value]
+                properties:
+                  metricId:
+                    type: string
+                    examples:
+                      - "metric_1"
+                  metricUuid:
+                    type: string
+                    format: uuid
+                    examples:
+                      - "aa4eef4d-3dc5-4b3d-9d8a-00c1d9b68065"
+                  metricName:
+                    type: string
+                    examples:
+                      - "Active Directory: Count of Joined Computers"
+                  value:
+                    description: Evaluated metric value
+                    oneOf:
+                      - type: string
+                      - type: number
+                      - type: integer
+                      - type: boolean
+                      - type: array
+                      - type: object
+                    examples:
+                      - 7
+                  error:
+                    type: string
+                    description: Error message if evaluation failed
+
+    # ========================================================================
+    # META / CAPABILITIES
+    # ========================================================================
+    objectCapabilities:
+      type: object
+      additionalProperties: false
+      required: [object, filterableFields, expandableFields, events]
+      properties:
+        object:
+          type: string
+          enum: [alerts, assets, environments, identities, inspectors]
+          description: Object type
+        filterableFields:
+          type: array
+          items: { type: string }
+          description: Fields that can be used in filter queries
+        expandableFields:
+          type: array
+          items: { type: string }
+          description: Fields that can be expanded in responses
+        events:
+          type: array
+          items:
+            type: string
+            enum: [created, updated, deleted]
+          description: Webhook events supported for this object type
+
+    objectCapabilitiesResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/objectCapabilities" }
+
+    # ========================================================================
+    # PAGINATION
+    # ========================================================================
+    pagination:
+      type: object
+      additionalProperties: false
+      required: [limit, offset, count]
+      properties:
+        limit: 
+          type: integer
+          description: Number of items requested per page
+          examples:
+            - 100
+        offset: 
+          type: integer
+          description: Number of items skipped
+          examples:
+            - 0
+        count: 
+          type: integer
+          description: Total number of items matching the query
+          examples:
+            - 547
+        hasMore:
+          type: boolean
+          description: Whether more results are available beyond this page
+          examples:
+            - true
+
+    # ========================================================================
+    # WEBHOOKS
+    # ========================================================================
+    webhookDeliveryMode:
+      type: string
+      enum: [full, diff]
+      description: |
+        - full: Complete object sent in each webhook
+        - diff: Only changed fields sent in webhook
+
+    webhookObject:
+      type: string
+      enum: [alerts, assets, environments, identities, inspectors]
+      description: Object type to subscribe to
+
+    webhookObjectSubscription:
+      type: object
+      additionalProperties: false
+      required: [object, events]
+      properties:
+        object: { $ref: "#/components/schemas/webhookObject" }
+        events:
+          type: array
+          items:
+            type: string
+            enum: [created, updated, deleted]
+          description: Events to subscribe to for this object
+        filter: 
+          type: string
+          description: FastAPI Filter expression to filter webhook events
+        expand:
+          type: array
+          items: { type: string }
+          description: Fields to expand in webhook payload
+        delivery:
+          type: object
+          additionalProperties: false
+          required: [mode]
+          properties:
+            mode: 
+              $ref: "#/components/schemas/webhookDeliveryMode"
+            includeSnapshot:
+              type: string
+              enum: [none, minimal, full]
+              default: minimal
+              description: |
+                - none: No snapshot included
+                - minimal: Include core fields only
+                - full: Include complete object snapshot
+
+    webhookSubscription:
+      type: object
+      additionalProperties: false
+      required: [subscriptionId, status, endpointUrl, objects, createdAt, updatedAt]
+      properties:
+        subscriptionId: 
+          type: string
+          description: Unique subscription identifier
+        name: 
+          type: string
+          description: Human-readable subscription name
+        status:
+          type: string
+          enum: [enabled, disabled]
+          description: Subscription status
+        endpointUrl: 
+          type: string
+          format: uri
+          description: HTTPS URL to receive webhook POSTs
+        objects:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/webhookObjectSubscription" }
+          description: Object subscriptions
+        createdAt: 
+          type: string
+          format: date-time
+          description: Subscription creation timestamp (UTC, ISO 8601)
+        updatedAt: 
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+
+    webhookSubscriptionCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [endpointUrl, secret, objects]
+      properties:
+        name: { type: string }
+        endpointUrl: 
+          type: string
+          format: uri
+          description: HTTPS URL to receive webhook POSTs
+        secret: 
+          type: string
+          description: Secret for HMAC signature verification
+        objects:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/webhookObjectSubscription" }
+
+    webhookSubscriptionGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/webhookSubscription" }
+
+    webhookSubscriptionListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/webhookSubscription" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    webhookSubscriptionPatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        status:
+          type: string
+          enum: [enabled, disabled]
+        endpointUrl: 
+          type: string
+          format: uri
+        secret: 
+          type: string
+          description: Update webhook secret for signature verification
+        objects:
+          type: array
+          items: { $ref: "#/components/schemas/webhookObjectSubscription" }
+
+    # ========================================================================
+    # WEBHOOK PAYLOADS (what gets POSTed to your endpoint)
+    # ========================================================================
+    webhookPayload:
+      type: object
+      additionalProperties: false
+      required: [id, type, createdAt, data]
+      properties:
+        id:
+          type: string
+          description: Unique webhook event ID
+          examples:
+            - "evt_1234567890"
+        type:
+          type: string
+          description: Event type (object.event format)
+          examples:
+            - "alert.created"
+          enum:
+            - alert.created
+            - alert.updated
+            - alert.deleted
+            - asset.created
+            - asset.updated
+            - asset.deleted
+            - environment.created
+            - environment.updated
+            - environment.deleted
+            - identity.created
+            - identity.updated
+            - identity.deleted
+            - inspector.created
+            - inspector.updated
+            - inspector.deleted
+        createdAt:
+          type: string
+          format: date-time
+          description: When the event occurred (UTC, ISO 8601)
+          examples:
+            - "2024-02-06T10:30:00Z"
+        data:
+          type: object
+          required: [object]
+          properties:
+            object:
+              description: The affected object (alert, asset, environment, identity, or inspector)
+              oneOf:
+                - $ref: "#/components/schemas/alert"
+                - $ref: "#/components/schemas/asset"
+                - $ref: "#/components/schemas/environment"
+                - $ref: "#/components/schemas/identity"
+                - $ref: "#/components/schemas/inspector"
+            previousAttributes:
+              type: object
+              additionalProperties: true
+              description: For update events with diff mode, contains only changed fields
+            snapshot:
+              type: object
+              description: Complete object snapshot (if includeSnapshot is not 'none')
+              oneOf:
+                - $ref: "#/components/schemas/alert"
+                - $ref: "#/components/schemas/asset"
+                - $ref: "#/components/schemas/environment"
+                - $ref: "#/components/schemas/identity"
+                - $ref: "#/components/schemas/inspector"
+      examples:
+        - id: "evt_1234567890"
+          type: "alert.created"
+          createdAt: "2024-02-06T10:30:00Z"
+          data:
+            object:
+              alertId: "alert_7586"
+              environmentId: "env_8888"
+              name: "Critical vulnerability detected"
+              status: "open"
+              priority: "critical"
+              createdAt: "2024-02-06T10:30:00Z"
+              updatedAt: "2024-02-06T10:30:00Z"
+
+    webhookSignatureVerification:
+      type: object
+      description: |
+        Webhook signatures for verification.
+        
+        Each webhook POST includes these headers:
+        - X-Liongard-Signature: HMAC-SHA256 signature of the payload
+        - X-Liongard-Timestamp: Unix timestamp of when the webhook was sent
+        
+        To verify:
+        1. Construct the signed payload: `{timestamp}.{raw_json_body}`
+        2. Compute HMAC-SHA256 using your webhook secret
+        3. Compare to X-Liongard-Signature header
+        
+        Reject webhooks with timestamps older than 5 minutes to prevent replay attacks.
