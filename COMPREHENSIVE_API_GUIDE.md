@@ -1,5 +1,9 @@
 # Liongard Vendor API v3 - Complete Guide
 
+**🔗 Interactive API Explorer:** [Try it in Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml)
+
+---
+
 ## Table of Contents
 1. [What is This API?](#what-is-this-api)
 2. [Who Should Use This?](#who-should-use-this)
@@ -21,6 +25,18 @@
 ## What is This API?
 
 The Liongard Vendor API v3 is **the first external-facing API** designed specifically for vendors and partners to integrate their products with Liongard. This is NOT a rewrite of internal v1/v2 APIs - it's a brand new API built from the ground up for vendor integrations.
+
+**📖 Interactive API Documentation:**  
+
+**[➡️ Open in Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml)**
+
+The interactive documentation lets you:
+- ✅ Browse all 26 endpoints
+- ✅ View request/response examples
+- ✅ Test API calls directly in the browser
+- ✅ Explore all 36 data schemas
+- ✅ See pagination headers
+- ✅ Copy code snippets
 
 ### What It Does
 
@@ -2255,10 +2271,12 @@ POST /v3/webhooks/subscriptions                                  # Subscribe to 
 
 ### Resources
 
+- **Interactive API Docs** - https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml
 - **RSQL Filter Guide** - Complete filtering reference
 - **RSQL Migration Guide** - If coming from other syntax
 - **API Complete Summary** - Full endpoint reference
 - **Jobs & Async Processing** - Deep dive on jobs
+- **Response Format Guide** - Header-based pagination details
 
 ### Support
 
