@@ -717,8 +717,7 @@ paths:
               schema:
                 type: string
                 format: uri
-              examples:
-              - https://api.liongard.example.com/v3/jobs/job_abc123xyz
+              example: https://api.liongard.example.com/v3/jobs/job_abc123xyz
           content:
             application/json:
               schema:
@@ -3735,3 +3734,194 @@ components:
         Reject webhooks with timestamps older than 5 minutes to prevent replay attacks.
 
         '
+    dataprintJobResponse:
+      type: object
+      required:
+      - jobId
+      - status
+      - message
+      - pollUrl
+      properties:
+        jobId:
+          type: string
+          description: Unique job identifier for tracking processing status
+          examples:
+          - job_abc123xyz
+        status:
+          type: string
+          enum:
+          - pending
+          - processing
+          description: Initial job status
+          examples:
+          - pending
+        message:
+          type: string
+          description: Human-readable status message
+          examples:
+          - Dataprint accepted for processing
+        pollUrl:
+          type: string
+          format: uri
+          description: URL to poll for job status updates
+          examples:
+          - https://api.liongard.example.com/v3/jobs/job_abc123xyz
+    objectCapabilitiesResponse:
+      type: object
+      required:
+      - objects
+      properties:
+        objects:
+          type: array
+          items:
+            type: object
+            required:
+            - objectType
+            - filterableFields
+            - expandableFields
+            properties:
+              objectType:
+                type: string
+                examples:
+                - alert
+                - asset
+                - environment
+              filterableFields:
+                type: array
+                items:
+                  type: string
+                examples:
+                - - status
+                  - priority
+                  - createdAt
+              expandableFields:
+                type: array
+                items:
+                  type: string
+                examples:
+                - - environment
+                  - inspector
+    assetTypeCapabilitiesResponse:
+      type: object
+      required:
+      - assetTypes
+      properties:
+        assetTypes:
+          type: array
+          items:
+            type: object
+            required:
+            - assetType
+            - category
+            - mappableFields
+            properties:
+              assetType:
+                type: string
+                examples:
+                - server
+                - workstation
+                - firewall
+              category:
+                type: string
+                examples:
+                - compute
+                - network
+                - security
+              mappableFields:
+                type: array
+                items:
+                  type: string
+                examples:
+                - - name
+                  - ipAddress
+                  - serialNumber
+    metricEvaluateResponse:
+      type: array
+      items:
+        type: object
+        required:
+        - systemId
+        - metricId
+        - metricName
+        - value
+        - evaluatedAt
+        properties:
+          systemId:
+            type: string
+            description: System (timeline + environment) this metric was evaluated
+              for
+            examples:
+            - system_abc123
+          environmentId:
+            type: string
+            examples:
+            - env_8888
+          environmentName:
+            type: string
+            examples:
+            - Acme Corp
+          metricId:
+            type: string
+            examples:
+            - metric_456
+          metricName:
+            type: string
+            examples:
+            - Device Count - Offline
+          value:
+            description: Metric result value (can be any JSON type)
+            examples:
+            - 42
+            - string value
+            - - array
+            - object: value
+          timelineId:
+            type: string
+            examples:
+            - timeline_xyz
+          evaluatedAt:
+            type: string
+            format: date-time
+            examples:
+            - '2024-02-06T10:30:00Z'
+    systemMetricsResponse:
+      type: object
+      required:
+      - systemId
+      - environmentId
+      - metrics
+      properties:
+        systemId:
+          type: string
+          examples:
+          - system_abc123
+        environmentId:
+          type: string
+          examples:
+          - env_8888
+        environmentName:
+          type: string
+          examples:
+          - Acme Corp
+        inspectorId:
+          type: string
+          examples:
+          - inspector_13
+        metrics:
+          type: array
+          items:
+            type: object
+            required:
+            - metricId
+            - metricName
+            - value
+            - evaluatedAt
+            properties:
+              metricId:
+                type: string
+              metricName:
+                type: string
+              value: {}
+              evaluatedAt:
+                type: string
+                format: date-time
