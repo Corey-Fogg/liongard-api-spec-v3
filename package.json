@@ -1,0 +1,15 @@
+{
+  "name": "liongard-api-v3",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "lint": "spectral lint openapi/v3.yaml",
+    "bundle": "redocly bundle openapi/v3.yaml -o dist/openapi.json",
+    "preview": "redocly preview-docs openapi/v3.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.29.0",
+    "@stoplight/spectral-cli": "^6.13.1"
+  }
+}
