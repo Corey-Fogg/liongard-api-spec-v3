@@ -1,3 +1,8 @@
+---
+title: Design History & Rationale
+nav_order: 3
+---
+
 # Liongard Vendor API v3 - Design History & Rationale
 
 ## Executive Summary
@@ -11,12 +16,12 @@ Liongard Vendor API v3 is the **first external-facing API** built specifically f
 - Vendor use cases differ fundamentally from UI use cases
 
 **Key Differentiators:**
-- ✅ Async processing (non-blocking)
-- ✅ Proper HTTP semantics (headers for metadata)
-- ✅ Standard filtering (RSQL)
-- ✅ Webhook-first design
-- ✅ No wrapper objects
-- ✅ Production-grade patterns
+- Async processing (non-blocking)
+- Proper HTTP semantics (headers for metadata)
+- Standard filtering (RSQL)
+- Webhook-first design
+- No wrapper objects
+- Production-grade patterns
 
 ---
 
@@ -42,8 +47,8 @@ Liongard Vendor API v3 is the **first external-facing API** built specifically f
 
 #### Naming Convention: camelCase
 ```
-✅ environmentId, assetType, createdAt
-❌ environment_id, asset_type, created_at
+Good: environmentId, assetType, createdAt
+Bad:  environment_id, asset_type, created_at
 ```
 
 **Rationale:** JavaScript-friendly, consistent with modern REST APIs.
@@ -58,10 +63,10 @@ Response: In body (initially)
 
 #### Filtering Philosophy
 ```
-✅ Filter by model fields only
-✅ Explicit field references
-❌ No magic query parsing
-❌ No expand-all wildcards
+Do: Filter by model fields only
+Do: Explicit field references
+Don't: Magic query parsing
+Don't: Expand-all wildcards
 ```
 
 **Rationale:** Predictable, version-safe, discoverable.
@@ -88,9 +93,9 @@ EnvironmentId = 15243 AND AssetType = Workstation
 
 **Decision:**
 ```
-✅ GET /v3/alerts (global, query all)
-✅ Filter by environmentId using where/filter
-✅ Environment-scoped routes optional
+GET /v3/alerts (global, query all)
+Filter by environmentId using where/filter
+Environment-scoped routes optional
 ```
 
 **Rationale:** 
@@ -145,7 +150,7 @@ POST /v3/environments/{environmentId}/inspectors/{inspectorId}/dataprints
 
 **Problem Discovered:**
 ```
-❌ expand: enum[installedSoftware, policies, rules]
+expand: enum[installedSoftware, policies, rules]  // problematic
 ```
 
 **Why This Fails:**
@@ -162,10 +167,10 @@ POST /v3/environments/{environmentId}/inspectors/{inspectorId}/dataprints
 
 **Final Solution: Dynamic Discovery**
 ```
-✅ GET /v3/meta/objects             # Discover expandable fields per object
-✅ GET /v3/meta/assets/types        # Discover asset-type-specific fields
-✅ expand=field1,field2             # Explicit strings
-✅ strictExpand=true                # Fail on invalid expands
+GET /v3/meta/objects             # Discover expandable fields per object
+GET /v3/meta/assets/types        # Discover asset-type-specific fields
+expand=field1,field2             # Explicit strings
+strictExpand=true                # Fail on invalid expands
 ```
 
 **Rationale:**
@@ -233,8 +238,8 @@ Location: /v3/alerts/alert_123
 
 **Decisions:**
 ```
-✅ POST /v3/environments
-✅ POST /v3/alerts
+POST /v3/environments
+POST /v3/alerts
 ```
 
 **Schema Strategy:**
@@ -653,15 +658,15 @@ PUT /v3/environments/{envId}/inspectors/{inspectorId}/config
 
 ### Decisions That Stuck
 
-✅ camelCase naming  
-✅ Async processing  
-✅ Job-based tracking  
-✅ RSQL filtering  
-✅ No wrapper objects  
-✅ Headers for metadata  
-✅ Webhooks with same filter syntax  
-✅ Hierarchical resources  
-✅ Meta discovery endpoints  
+- camelCase naming
+- Async processing
+- Job-based tracking
+- RSQL filtering
+- No wrapper objects
+- Headers for metadata
+- Webhooks with same filter syntax
+- Hierarchical resources
+- Meta discovery endpoints
 
 ---
 
@@ -754,20 +759,20 @@ GET /v3/jobs/job_123
 
 ### What's Stable
 
-✅ Resource models (alert, asset, environment)  
-✅ URL structure (/v3/resource/{id})  
-✅ RSQL filtering syntax  
-✅ Async job pattern  
-✅ Response format (no wrappers)  
-✅ Header-based pagination  
+- Resource models (alert, asset, environment)
+- URL structure (/v3/resource/{id})
+- RSQL filtering syntax
+- Async job pattern
+- Response format (no wrappers)
+- Header-based pagination
 
 ### What Can Evolve
 
-✅ New fields (additive)  
-✅ New resource types  
-✅ New webhook events  
-✅ New metric queries  
-✅ New asset types  
+- New fields (additive)
+- New resource types
+- New webhook events
+- New metric queries
+- New asset types
 
 ### Version Strategy
 
@@ -854,23 +859,23 @@ GET /v3/jobs/job_123
 
 ### For Vendors
 
-✅ Can integrate in < 1 day  
-✅ Don't need support for common tasks  
-✅ Can discover capabilities at runtime  
-✅ Never block on long operations  
-✅ Get real-time updates via webhooks  
-✅ Can filter to exactly what they need  
-✅ Have working code examples  
+- Can integrate in < 1 day
+- Don't need support for common tasks
+- Can discover capabilities at runtime
+- Never block on long operations
+- Get real-time updates via webhooks
+- Can filter to exactly what they need
+- Have working code examples
 
 ### For Liongard
 
-✅ Versioned independently from UI  
-✅ Breaking changes don't affect internal systems  
-✅ Rate limiting per vendor  
-✅ Job tracking for debugging  
-✅ Self-service documentation  
-✅ Webhook delivery monitoring  
-✅ Clear error messages reduce tickets  
+- Versioned independently from UI
+- Breaking changes don't affect internal systems
+- Rate limiting per vendor
+- Job tracking for debugging
+- Self-service documentation
+- Webhook delivery monitoring
+- Clear error messages reduce tickets
 
 ---
 

@@ -1,3 +1,9 @@
+---
+title: Response Format Changes
+parent: Migration Guides
+nav_order: 2
+---
+
 # API Response Format Update Summary
 
 ## What Changed
@@ -167,12 +173,12 @@ Relations:
 **File:** `liongard-api-v3-enhanced.yaml`
 
 Changes:
-- ✅ All list endpoints return arrays directly
-- ✅ All single resource endpoints return objects directly
-- ✅ Pagination headers added to all list endpoints
-- ✅ Link header (RFC 5988) added
-- ✅ Removed 25 response wrapper schemas
-- ✅ Kept only 36 core data schemas
+- All list endpoints return arrays directly
+- All single resource endpoints return objects directly
+- Pagination headers added to all list endpoints
+- Link header (RFC 5988) added
+- Removed 25 response wrapper schemas
+- Kept only 36 core data schemas
 
 **Stats:**
 - Endpoints: 26
@@ -183,11 +189,11 @@ Changes:
 **File:** `COMPREHENSIVE_API_GUIDE.md`
 
 Changes:
-- ✅ Updated all code examples to remove `.json()["data"]`
-- ✅ Updated pagination examples to use headers
-- ✅ Added Link header examples
-- ✅ Updated Quick Start guide
-- ✅ Updated complete integration example
+- Updated all code examples to remove `.json()["data"]`
+- Updated pagination examples to use headers
+- Added Link header examples
+- Updated Quick Start guide
+- Updated complete integration example
 
 ### 3. Response Format Guide (NEW)
 **File:** `RESPONSE_FORMAT_GUIDE.md`
@@ -203,10 +209,10 @@ Contents:
 
 ## Benefits
 
-### ✅ HTTP Standards Compliance
+### HTTP Standards Compliance
 Metadata in headers, content in body - proper HTTP usage.
 
-### ✅ Cleaner Code
+### Cleaner Code
 ```python
 # Before
 alert_name = response.json()["data"]["name"]
@@ -215,16 +221,16 @@ alert_name = response.json()["data"]["name"]
 alert_name = response.json()["name"]
 ```
 
-### ✅ Smaller Payloads
+### Smaller Payloads
 No wrapper objects = less data over the wire.
 
-### ✅ Better Caching
+### Better Caching
 Headers don't pollute response body, allowing better HTTP caching.
 
-### ✅ Standard Link Header
+### Standard Link Header
 Works automatically with HTTP clients that understand RFC 5988.
 
-### ✅ More RESTful
+### More RESTful
 Follows REST best practices and HTTP protocol design.
 
 ---
@@ -305,20 +311,20 @@ def get_all_using_links(url, headers):
 ## Validation
 
 ### OpenAPI Spec
-✅ **Valid YAML**  
-✅ **26 endpoints** defined  
-✅ **36 schemas** (core data only)  
-✅ **Zero wrapper schemas** (except errorResponse)  
-✅ **All list endpoints** return arrays with pagination headers  
-✅ **All single endpoints** return objects directly  
-✅ **Link header** (RFC 5988) on all list endpoints  
-✅ **Ready for Swagger Editor**  
+- **Valid YAML**
+- **26 endpoints** defined
+- **36 schemas** (core data only)
+- **Zero wrapper schemas** (except errorResponse)
+- **All list endpoints** return arrays with pagination headers
+- **All single endpoints** return objects directly
+- **Link header** (RFC 5988) on all list endpoints
+- **Ready for Swagger Editor**
 
 ### Documentation
-✅ **Comprehensive Guide** updated with new response format  
-✅ **Response Format Guide** created with examples  
-✅ **All code examples** updated to remove wrappers  
-✅ **Pagination examples** updated to use headers  
+- **Comprehensive Guide** updated with new response format
+- **Response Format Guide** created with examples
+- **All code examples** updated to remove wrappers
+- **Pagination examples** updated to use headers
 
 ---
 
@@ -346,13 +352,13 @@ curl -i -X GET "https://api.liongard.com/v3/assets?limit=10&offset=0" \
 
 ## Summary
 
-🎉 **API now follows HTTP best practices!**
+**API now follows HTTP best practices:**
 
-✅ **No wrapper objects** - Direct data access  
-✅ **Pagination in headers** - Proper HTTP usage  
-✅ **RFC 5988 Link header** - Standard pagination  
-✅ **36 schemas** (down from 61) - Simpler spec  
-✅ **Cleaner code** - Less nesting  
-✅ **Better performance** - Smaller payloads  
+- **No wrapper objects** - Direct data access
+- **Pagination in headers** - Proper HTTP usage
+- **RFC 5988 Link header** - Standard pagination
+- **36 schemas** (down from 61) - Simpler spec
+- **Cleaner code** - Less nesting
+- **Better performance** - Smaller payloads
 
-**The API is now more RESTful, standards-compliant, and developer-friendly!**
+The API is now more RESTful, standards-compliant, and developer-friendly.

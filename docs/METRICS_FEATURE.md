@@ -1,3 +1,9 @@
+---
+title: Metrics & JMESPath
+parent: Technical References
+nav_order: 5
+---
+
 # Metrics API Feature Documentation
 
 ## Overview
@@ -353,9 +359,9 @@ Result: {
 ### 1. Metric Naming
 - Use pattern: `{Inspector}: {Description}`
 - Examples:
-  - ✅ "Active Directory: Count of Joined Computers"
-  - ✅ "M365: Users Without MFA"
-  - ❌ "my_metric_1"
+  - Good: "Active Directory: Count of Joined Computers"
+  - Good: "M365: Users Without MFA"
+  - Bad: "my_metric_1"
 
 ### 2. JMESPath Performance
 - Keep queries simple when possible
@@ -492,13 +498,13 @@ POST /v3/metrics/evaluate
 
 ## Summary
 
-✅ **6 new endpoints** for metric management and evaluation  
-✅ **8 new schemas** defining metric structures  
-✅ **JMESPath-based** querying for flexibility  
-✅ **Custom metrics** support for vendor-specific needs  
-✅ **Bulk evaluation** for efficient data retrieval  
-✅ **Change tracking** for monitoring over time  
-✅ **Rate limited** to ensure API stability  
+- **6 new endpoints** for metric management and evaluation
+- **8 new schemas** defining metric structures
+- **JMESPath-based** querying for flexibility
+- **Custom metrics** support for vendor-specific needs
+- **Bulk evaluation** for efficient data retrieval
+- **Change tracking** for monitoring over time
+- **Rate limited** to ensure API stability
 
 Metrics enable vendors to:
 - Extract specific data points from inspections

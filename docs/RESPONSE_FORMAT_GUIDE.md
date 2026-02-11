@@ -1,3 +1,9 @@
+---
+title: Response Format
+parent: Technical References
+nav_order: 3
+---
+
 # API Response Format - No Wrappers, Headers for Metadata
 
 ## Overview
@@ -296,7 +302,7 @@ has_more = response.headers.get('X-Pagination-Has-More') == 'true'  # In headers
 
 ## Benefits
 
-### ✅ Cleaner Code
+### Cleaner Code
 ```python
 # Before
 alert_name = response.json()["data"]["name"]
@@ -305,16 +311,16 @@ alert_name = response.json()["data"]["name"]
 alert_name = response.json()["name"]
 ```
 
-### ✅ Smaller Payloads
+### Smaller Payloads
 No wrapper objects means less data over the wire.
 
-### ✅ HTTP Standards
+### HTTP Standards
 Metadata in headers is proper HTTP usage.
 
-### ✅ Better Caching
+### Better Caching
 Headers don't pollute response body.
 
-### ✅ Standard Link Header
+### Standard Link Header
 Works with HTTP clients that understand RFC 5988.
 
 ---
@@ -431,10 +437,10 @@ curl -I GET url -H "X-API-Key: key"
 
 ## Summary
 
-✅ **No wrapper objects** - Direct access to data  
-✅ **Pagination in headers** - Proper HTTP usage  
-✅ **Standard Link header** - RFC 5988 compliant  
-✅ **Cleaner responses** - Less nesting  
-✅ **Smaller payloads** - Less data transfer  
+- **No wrapper objects** - Direct access to data
+- **Pagination in headers** - Proper HTTP usage
+- **Standard Link header** - RFC 5988 compliant
+- **Cleaner responses** - Less nesting
+- **Smaller payloads** - Less data transfer
 
-This is the **proper RESTful way** to design APIs! 🎉
+This is the proper RESTful way to design APIs.

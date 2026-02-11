@@ -1,16 +1,20 @@
+---
+nav_exclude: true
+---
+
 # Liongard Vendor API v3 Specification
 
 The first external-facing API for Liongard, designed specifically for vendors and partners to integrate their products with the Liongard platform.
 
 **This is NOT a v1/v2 rewrite** - it's a ground-up design built for external vendor integrations.
 
-## 📖 Documentation
+## Documentation
 
-**[🔗 Interactive API Explorer](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml)**
+**[Interactive API Explorer](swagger-ui)**
 
 Browse and test the API directly in Swagger UI.
 
-## 📚 Documentation Files
+## Documentation Files
 
 ### Core Documentation
 - **[COMPREHENSIVE_API_GUIDE.md](COMPREHENSIVE_API_GUIDE.md)** - Complete vendor integration guide (2,200+ lines)
@@ -28,7 +32,7 @@ Browse and test the API directly in Swagger UI.
 - **[RSQL_MIGRATION_SUMMARY.md](docs/RSQL_MIGRATION_SUMMARY.md)** - Moving from old filter syntax
 - **[RESPONSE_UPDATE_SUMMARY.md](docs/RESPONSE_UPDATE_SUMMARY.md)** - Response format changes
 
-## 🚀 Quick Start
+## Quick Start
 
 ```python
 import requests
@@ -87,19 +91,19 @@ job_id = response.json()["jobId"]
 print(f"Processing: {job_id}")
 ```
 
-## 🔑 Key Features
+## Key Features
 
-- ✅ **26 endpoints** - Complete API surface
-- ✅ **41 schemas** - Fully defined data models
-- ✅ **RSQL filtering** - Clean, powerful query syntax
-- ✅ **Async processing** - Non-blocking dataprint operations
-- ✅ **Metrics system** - JMESPath-based data extraction
-- ✅ **Webhooks** - Real-time event notifications
-- ✅ **OpenAPI 3.1** - Standards-compliant specification
-- ✅ **No wrappers** - Direct arrays/objects in responses
-- ✅ **Header pagination** - RFC 5988 Link header
+- **26 endpoints** - Complete API surface
+- **41 schemas** - Fully defined data models
+- **RSQL filtering** - Clean, powerful query syntax
+- **Async processing** - Non-blocking dataprint operations
+- **Metrics system** - JMESPath-based data extraction
+- **Webhooks** - Real-time event notifications
+- **OpenAPI 3.1** - Standards-compliant specification
+- **No wrappers** - Direct arrays/objects in responses
+- **Header pagination** - RFC 5988 Link header
 
-## 📦 What's Different from v1/v2?
+## What's Different from v1/v2?
 
 | Feature | v1/v2 (Internal) | v3 (Vendor) |
 |---------|------------------|-------------|
@@ -111,7 +115,7 @@ print(f"Processing: {job_id}")
 | **Terminology** | "Ingestion" | "Dataprint" |
 | **Design Goal** | Optimize for UI | Optimize for vendors |
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Your Product → Push Dataprints → Liongard API → Process Async → Extract Metrics → Your Dashboard
@@ -125,7 +129,7 @@ Your Product → Push Dataprints → Liongard API → Process Async → Extract 
 5. Extract Metrics (insights and aggregations)
 6. Receive Webhooks (real-time updates)
 
-## 🛠️ Development
+## Development
 
 ### Validate Spec
 
@@ -148,20 +152,20 @@ docker run -p 8080:8080 -e SWAGGER_JSON=/spec/liongard-api-v3.yaml \
 npx @redocly/cli preview-docs liongard-api-v3.yaml
 ```
 
-## 🤝 Contributing
+## Contributing
 
 When making changes:
 
-1. ✅ Maintain OpenAPI 3.1.0 compliance
-2. ✅ Keep response format consistent (no wrappers)
-3. ✅ Use RSQL for filtering (not double underscores)
-4. ✅ Add pagination headers to list endpoints
-5. ✅ Update documentation
-6. ✅ Validate before committing
+1. Maintain OpenAPI 3.1.0 compliance
+2. Keep response format consistent (no wrappers)
+3. Use RSQL for filtering (not double underscores)
+4. Add pagination headers to list endpoints
+5. Update documentation
+6. Validate before committing
 
 See [.clinerules](.clinerules) for detailed guidelines for Claude Code.
 
-## 📖 Design Philosophy
+## Design Philosophy
 
 Read [DESIGN_HISTORY_AND_RATIONALE.md](DESIGN_HISTORY_AND_RATIONALE.md) to understand:
 - Why v3 exists
@@ -170,7 +174,7 @@ Read [DESIGN_HISTORY_AND_RATIONALE.md](DESIGN_HISTORY_AND_RATIONALE.md) to under
 - Lessons learned
 - Comparison with v1/v2
 
-## 🎯 Use Cases
+## Use Cases
 
 **MSP Tool Integration:**
 ```
@@ -187,7 +191,7 @@ Your Security Tool → Push vulnerability data → Liongard → Get alerts → T
 Your Monitoring Tool → Push device data → Liongard → Track changes → Create tickets
 ```
 
-## 📊 API Stats
+## API Stats
 
 - **Endpoints**: 26
 - **Schemas**: 41
@@ -195,20 +199,20 @@ Your Monitoring Tool → Push device data → Liongard → Track changes → Cre
 - **API Version**: 3.0.0
 - **Response Wrapper Schemas**: 0 (direct responses)
 - **Special Response Schemas**: 6 (jobs, metrics, meta)
-- **Validation**: ✅ Zero errors
+- **Validation**: Zero errors
 
-## 🔗 Links
+## Links
 
-- **Interactive Docs**: https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml
+- **Interactive Docs**: [Swagger UI](swagger-ui)
 - **OpenAPI 3.1 Spec**: https://spec.openapis.org/oas/v3.1.0
 - **RSQL Spec**: https://github.com/jirutka/rsql-parser
 - **RFC 5988 (Link Header)**: https://tools.ietf.org/html/rfc5988
 
-## 📝 License
+## License
 
 [Your License Here]
 
-## 🆘 Support
+## Support
 
 For questions or issues:
 1. Check the [Comprehensive API Guide](COMPREHENSIVE_API_GUIDE.md)
@@ -217,4 +221,4 @@ For questions or issues:
 
 ---
 
-**Built for vendors, by vendors.** 🚀
+**Built for vendors, by vendors.**

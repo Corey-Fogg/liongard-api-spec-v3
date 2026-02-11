@@ -1,6 +1,12 @@
+---
+title: Complete Integration Guide
+nav_order: 2
+permalink: /COMPREHENSIVE_API_GUIDE
+---
+
 # Liongard Vendor API v3 - Complete Guide
 
-**🔗 Interactive API Explorer:** [Try it in Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml)
+**Interactive API Explorer:** [Try it in Swagger UI](swagger-ui)
 
 ---
 
@@ -26,17 +32,17 @@
 
 The Liongard Vendor API v3 is **the first external-facing API** designed specifically for vendors and partners to integrate their products with Liongard. This is NOT a rewrite of internal v1/v2 APIs - it's a brand new API built from the ground up for vendor integrations.
 
-**📖 Interactive API Documentation:**  
+**Interactive API Documentation:**
 
-**[➡️ Open in Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml)**
+**[Open in Swagger UI](swagger-ui)**
 
 The interactive documentation lets you:
-- ✅ Browse all 26 endpoints
-- ✅ View request/response examples
-- ✅ Test API calls directly in the browser
-- ✅ Explore all 36 data schemas
-- ✅ See pagination headers
-- ✅ Copy code snippets
+- Browse all 26 endpoints
+- View request/response examples
+- Test API calls directly in the browser
+- Explore all 36 data schemas
+- See pagination headers
+- Copy code snippets
 
 ### What It Does
 
@@ -68,17 +74,17 @@ Your Monitoring Tool → Push device data → Liongard → Track changes → Cre
 
 ### You Should Use This API If You Are:
 
-✅ **A vendor** building an integration with Liongard  
-✅ **An MSP platform** wanting to sync data with Liongard  
-✅ **A security tool** pushing security data  
-✅ **A monitoring solution** sending infrastructure data  
-✅ **A partner** building custom integrations  
+- **A vendor** building an integration with Liongard
+- **An MSP platform** wanting to sync data with Liongard
+- **A security tool** pushing security data
+- **A monitoring solution** sending infrastructure data
+- **A partner** building custom integrations
 
 ### You Should NOT Use This If You Are:
 
-❌ Building internal Liongard features (use internal APIs)  
-❌ Creating Liongard UI components (this is headless)  
-❌ Looking for a GraphQL API (this is REST)  
+- Building internal Liongard features (use internal APIs)
+- Creating Liongard UI components (this is headless)
+- Looking for a GraphQL API (this is REST)
 
 ---
 
@@ -200,7 +206,7 @@ curl -X GET "https://api.liongard.com/v3/jobs/job_xyz789" \
 }
 ```
 
-🎉 **Done!** Your data is now in Liongard.
+**Done!** Your data is now in Liongard.
 
 ---
 
@@ -542,10 +548,10 @@ Configuration:
 ### When to Push
 
 Push a dataprint when:
-- ✅ Your data changes (event-driven)
-- ✅ On a schedule (e.g., every hour)
-- ✅ User triggers sync in your UI
-- ✅ After significant events (new device added, etc.)
+- Your data changes (event-driven)
+- On a schedule (e.g., every hour)
+- User triggers sync in your UI
+- After significant events (new device added, etc.)
 
 ### Dataprint Structure
 
@@ -1627,7 +1633,7 @@ class MonitoringSync:
         # 3. Wait for completion
         print("  Waiting for processing...")
         result = self.wait_for_job(job_id)
-        print(f"  ✓ Complete: {result['assetsProcessed']} assets processed")
+        print(f"  Complete: {result['assetsProcessed']} assets processed")
         
         return result
     
@@ -1639,7 +1645,7 @@ class MonitoringSync:
             try:
                 result = self.sync_customer(customer.liongard_env_id)
             except Exception as e:
-                print(f"  ✗ Failed: {e}")
+                print(f"  Failed: {e}")
 
 # Run sync
 sync = MonitoringSync(integration, inspector_id)
@@ -2240,12 +2246,12 @@ def validate_dataprint(data, config):
 
 ### What You Learned
 
-✅ **The Vendor API is brand new** - Built specifically for external integrations  
-✅ **Core workflow:** Create Inspector → Configure → Push Dataprints → Extract Metrics  
-✅ **Async processing:** All dataprints are processed in background with job tracking  
-✅ **Two-way bridge:** Push data in, pull insights out  
-✅ **Real-time updates:** Webhooks notify you of events  
-✅ **Flexible queries:** RSQL for filtering, JMESPath for metrics  
+- **The Vendor API is brand new** - Built specifically for external integrations
+- **Core workflow:** Create Inspector -> Configure -> Push Dataprints -> Extract Metrics
+- **Async processing:** All dataprints are processed in background with job tracking
+- **Two-way bridge:** Push data in, pull insights out
+- **Real-time updates:** Webhooks notify you of events
+- **Flexible queries:** RSQL for filtering, JMESPath for metrics
 
 ### Key Endpoints
 
@@ -2271,7 +2277,7 @@ POST /v3/webhooks/subscriptions                                  # Subscribe to 
 
 ### Resources
 
-- **Interactive API Docs** - https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml
+- **Interactive API Docs** - [Swagger UI](swagger-ui)
 - **RSQL Filter Guide** - Complete filtering reference
 - **RSQL Migration Guide** - If coming from other syntax
 - **API Complete Summary** - Full endpoint reference
@@ -2289,4 +2295,4 @@ Questions? Issues? Contact Liongard support with:
 
 ---
 
-**You're ready to build your Liongard integration!** 🚀
+**You're ready to build your Liongard integration!**

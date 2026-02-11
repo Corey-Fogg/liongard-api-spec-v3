@@ -1,0 +1,28 @@
+---
+title: Interactive API Explorer
+nav_order: 6
+permalink: /swagger-ui
+---
+
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+<style>
+  .swagger-ui .topbar { display: none; }
+  .swagger-ui .info { margin: 20px 0; }
+  #swagger-ui .swagger-ui { font-size: 14px; }
+</style>
+
+<div id="swagger-ui"></div>
+
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+  SwaggerUIBundle({
+    url: "https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml",
+    dom_id: '#swagger-ui',
+    deepLinking: true,
+    presets: [
+      SwaggerUIBundle.presets.apis,
+      SwaggerUIBundle.SwaggerUIStandalonePreset
+    ],
+    layout: "BaseLayout"
+  });
+</script>

@@ -1,0 +1,31 @@
+title: Liongard Vendor API v3
+description: API specification and documentation for Liongard's vendor integration API
+remote_theme: just-the-docs/just-the-docs@v0.10.1
+
+url: https://corey-fogg.github.io
+baseurl: /liongard-api-spec-v3
+
+color_scheme: dark
+
+aux_links:
+  "GitHub":
+    - "https://github.com/Corey-Fogg/liongard-api-spec-v3"
+
+aux_links_new_tab: true
+
+nav_sort: case_insensitive
+
+search_enabled: true
+search:
+  heading_level: 3
+
+back_to_top: true
+back_to_top_text: "Back to top"
+
+footer_content: "Liongard Vendor API v3 Specification"
+
+exclude:
+  - .clinerules
+  - examples/
+  - tests/
+  - liongard-api-v3.yaml

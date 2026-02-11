@@ -1,3 +1,9 @@
+---
+title: RSQL Migration Guide
+parent: Migration Guides
+nav_order: 1
+---
+
 # RSQL Filter Syntax - Migration Summary
 
 ## What Changed
@@ -117,7 +123,7 @@ GET /v3/assets?filter=assetType=in=(server,workstation,firewall)
 
 ## Benefits of RSQL
 
-### ✅ More Readable
+### More Readable
 ```bash
 # Easier to understand
 status==pending;priority==critical
@@ -126,18 +132,18 @@ status==pending;priority==critical
 status=pending&priority=critical
 ```
 
-### ✅ Familiar Operators
+### Familiar Operators
 Uses standard comparison symbols (`>`, `<`, `>=`, `<=`, `==`, `!=`) that developers already know.
 
-### ✅ Cleaner Syntax
+### Cleaner Syntax
 No weird double underscores (`__in`, `__gte`, `__icontains`).
 
-### ✅ Better AND/OR Logic
+### Better AND/OR Logic
 - `;` for AND (clearer than `&`)
 - `,` for OR (explicit grouping)
 - `()` for complex logic
 
-### ✅ Standard Specification
+### Standard Specification
 RSQL is a documented standard with libraries in multiple languages.
 
 ---
@@ -298,10 +304,10 @@ For questions or issues:
 
 ## Summary
 
-✅ **Cleaner syntax** - No more double underscores  
-✅ **Standard operators** - Uses `==`, `>`, `<`, etc.  
-✅ **Better readability** - `;` for AND, `,` for OR  
-✅ **Wildcards** - `*` for pattern matching  
-✅ **Well documented** - RSQL is a standard specification  
+- **Cleaner syntax** - No more double underscores
+- **Standard operators** - Uses `==`, `>`, `<`, etc.
+- **Better readability** - `;` for AND, `,` for OR
+- **Wildcards** - `*` for pattern matching
+- **Well documented** - RSQL is a standard specification
 
 The migration is straightforward - update your filter strings to use RSQL syntax and test!

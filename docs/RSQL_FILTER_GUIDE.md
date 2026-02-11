@@ -1,3 +1,9 @@
+---
+title: RSQL Filter Syntax
+parent: Technical References
+nav_order: 2
+---
+
 # RSQL Filter Syntax Guide
 
 ## Overview
@@ -611,7 +617,7 @@ GET /v3/identities?filter=privileged==true;mfaEnabled==false;lastLogin>=2024-02-
 
 ## Best Practices
 
-### ✅ Do
+### Do
 - Use `==` for equality (double equals)
 - Use `;` for AND conditions
 - Use `,` for OR conditions  
@@ -621,7 +627,7 @@ GET /v3/identities?filter=privileged==true;mfaEnabled==false;lastLogin>=2024-02-
 - URL-encode special characters when constructing URLs manually
 - Add `limit` to prevent large responses
 
-### ❌ Don't
+### Don't
 - Use single `=` for equality (use `==`)
 - Use `&` for AND (use `;`)
 - Use `|` for OR (use `,`)
@@ -657,24 +663,24 @@ GET /v3/identities?filter=privileged==true;mfaEnabled==false;lastLogin>=2024-02-
 ### Why RSQL?
 
 **Compared to OData:**
-- ✅ Simpler syntax (no `$filter=`)
-- ✅ No spaces in operators
-- ✅ More intuitive for developers
+- Simpler syntax (no `$filter=`)
+- No spaces in operators
+- More intuitive for developers
 
 **Compared to MongoDB:**
-- ✅ More readable for URLs
-- ✅ No JSON in query strings
-- ✅ Simpler to construct
+- More readable for URLs
+- No JSON in query strings
+- Simpler to construct
 
 **Compared to GraphQL:**
-- ✅ Works with REST
-- ✅ No schema language needed
-- ✅ Standard HTTP GET requests
+- Works with REST
+- No schema language needed
+- Standard HTTP GET requests
 
 **Compared to Custom Syntax:**
-- ✅ Well-documented standard
-- ✅ Libraries available in many languages
-- ✅ Familiar to developers who've used it before
+- Well-documented standard
+- Libraries available in many languages
+- Familiar to developers who've used it before
 
 ---
 
@@ -697,11 +703,11 @@ Test RSQL filters using:
 
 ## Summary
 
-✅ **Clean, readable syntax** using familiar operators (`==`, `!=`, `>`, `<`)  
-✅ **Powerful combinators** (`;` for AND, `,` for OR)  
-✅ **Pattern matching** with wildcards (`*`)  
-✅ **Set operations** (`=in=`, `=out=`)  
-✅ **Standard specification** with library support  
-✅ **URL-friendly** - works great in query strings  
+- **Clean, readable syntax** using familiar operators (`==`, `!=`, `>`, `<`)
+- **Powerful combinators** (`;` for AND, `,` for OR)
+- **Pattern matching** with wildcards (`*`)
+- **Set operations** (`=in=`, `=out=`)
+- **Standard specification** with library support
+- **URL-friendly** - works great in query strings
 
 RSQL provides the perfect balance of power and simplicity for REST API filtering!

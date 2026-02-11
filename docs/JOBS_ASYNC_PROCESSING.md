@@ -1,3 +1,9 @@
+---
+title: Jobs & Async Processing
+parent: Technical References
+nav_order: 4
+---
+
 # Jobs & Asynchronous Processing
 
 ## Overview
@@ -213,11 +219,11 @@ DELETE /v3/jobs/job_abc123xyz
 
 | Job Status | Cancellable? | Behavior |
 |------------|--------------|----------|
-| **pending** | ✅ Yes | Removed from queue immediately |
-| **processing** | ✅ Yes | Gracefully stopped (2-5 seconds) |
-| **completed** | ❌ No | Returns 409 Conflict |
-| **failed** | ❌ No | Returns 409 Conflict |
-| **cancelled** | ❌ No | Returns 409 Conflict |
+| **pending** | Yes | Removed from queue immediately |
+| **processing** | Yes | Gracefully stopped (2-5 seconds) |
+| **completed** | No | Returns 409 Conflict |
+| **failed** | No | Returns 409 Conflict |
+| **cancelled** | No | Returns 409 Conflict |
 
 ### When to Cancel
 
@@ -395,15 +401,17 @@ In addition to per-inspector limits:
 
 ### Best Practices for Concurrency
 
-✅ **Check before submitting**: Query active jobs first  
-✅ **Handle 409 gracefully**: Wait or cancel as appropriate  
-✅ **Use queuing**: For multiple dataprints to same inspector  
-✅ **Stagger submissions**: When uploading to multiple inspectors  
-✅ **Monitor job count**: Don't exceed API-wide limits  
+**Do:**
+- **Check before submitting**: Query active jobs first
+- **Handle 409 gracefully**: Wait or cancel as appropriate
+- **Use queuing**: For multiple dataprints to same inspector
+- **Stagger submissions**: When uploading to multiple inspectors
+- **Monitor job count**: Don't exceed API-wide limits
 
-❌ **Don't retry immediately**: Wait or cancel existing job  
-❌ **Don't submit duplicates**: Check if job already exists  
-❌ **Don't ignore 409s**: Will continue to fail without action  
+**Don't:**
+- **Retry immediately**: Wait or cancel existing job
+- **Submit duplicates**: Check if job already exists
+- **Ignore 409s**: Will continue to fail without action
 
 ---
 
@@ -752,18 +760,20 @@ def push_with_progress(env_id, inspector_id, data, api_key, progress_callback):
 
 ## Best Practices Summary
 
-✅ **Use callbacks** for most production use cases  
-✅ **Poll intelligently** - adapt interval based on progress  
-✅ **Handle failures** - check status and error details  
-✅ **Set timeouts** - don't poll forever  
-✅ **Monitor job list** - track failures for debugging  
-✅ **Batch operations** - don't overload with too many concurrent jobs  
-✅ **Store job IDs** - for audit trails and troubleshooting  
+**Do:**
+- **Use callbacks** for most production use cases
+- **Poll intelligently** - adapt interval based on progress
+- **Handle failures** - check status and error details
+- **Set timeouts** - don't poll forever
+- **Monitor job list** - track failures for debugging
+- **Batch operations** - don't overload with too many concurrent jobs
+- **Store job IDs** - for audit trails and troubleshooting
 
-❌ **Don't poll aggressively** - respect rate limits  
-❌ **Don't ignore errors** - always check job status  
-❌ **Don't forget timeouts** - prevent hanging operations  
-❌ **Don't use HTTP callbacks** - HTTPS only for security  
+**Don't:**
+- **Poll aggressively** - respect rate limits
+- **Ignore errors** - always check job status
+- **Forget timeouts** - prevent hanging operations
+- **Use HTTP callbacks** - HTTPS only for security
 
 ---
 
@@ -805,14 +815,14 @@ job_id = push_dataprint_async(env_id, inspector_id, data, api_key, callback_url)
 
 ## Summary
 
-✅ **Dataprint POST returns 202 Accepted** with job ID  
-✅ **Poll GET /v3/jobs/{jobId}** for status  
-✅ **Optional callback URL** for one-time notification  
-✅ **Progress tracking** with percentage and messages  
-✅ **Webhooks** for continuous monitoring  
-✅ **Job history** via GET /v3/jobs  
-✅ **Error details** in failed jobs  
-✅ **30-day retention** for completed jobs  
+- **Dataprint POST returns 202 Accepted** with job ID
+- **Poll GET /v3/jobs/{jobId}** for status
+- **Optional callback URL** for one-time notification
+- **Progress tracking** with percentage and messages
+- **Webhooks** for continuous monitoring
+- **Job history** via GET /v3/jobs
+- **Error details** in failed jobs
+- **30-day retention** for completed jobs
 
 **API Changes:**
 - Dataprint POST: `201 Created` → `202 Accepted`

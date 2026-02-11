@@ -1,3 +1,9 @@
+---
+title: Endpoint Reference
+parent: Technical References
+nav_order: 1
+---
+
 # Liongard Data API v3 - Complete Feature Summary
 
 ## Overview
@@ -476,20 +482,20 @@ POST /v3/.../dataprints
 ## Best Practices
 
 ### 1. Dataprint Submission
-✅ Check for active jobs before submitting
+- Check for active jobs before submitting
 ```python
 can_submit, reason, job_id = can_submit_dataprint(env_id, inspector_id, api_key)
 if not can_submit:
     cancel_job(job_id, api_key)
 ```
 
-✅ Use callback URLs for production
+- Use callback URLs for production
 ```python
 submit_dataprint(env_id, inspector_id, data, api_key, 
                  callback_url="https://yourapp.com/webhook")
 ```
 
-✅ Handle 409 Conflicts gracefully
+- Handle 409 Conflicts gracefully
 ```python
 try:
     submit_dataprint(...)
@@ -499,7 +505,7 @@ except ConflictError as e:
 ```
 
 ### 2. Job Polling
-✅ Use adaptive intervals based on progress
+- Use adaptive intervals based on progress
 ```python
 if progress < 20:
     interval = 5  # Slow start
@@ -509,19 +515,19 @@ else:
     interval = 1  # Near completion
 ```
 
-✅ Set reasonable timeouts
+- Set reasonable timeouts
 ```python
 wait_for_job(job_id, timeout=300)  # 5 minutes
 ```
 
 ### 3. Metrics
-✅ Use bulk evaluation for efficiency
+- Use bulk evaluation for efficiency
 ```python
 # Evaluate multiple metrics across all systems at once
 evaluate_metrics(metrics=["metric_1", "metric_2", "metric_3"])
 ```
 
-✅ Cache metric definitions
+- Cache metric definitions
 ```python
 # Fetch once, use many times
 metrics = list_metrics()
@@ -529,13 +535,13 @@ metric_map = {m["metricId"]: m for m in metrics}
 ```
 
 ### 4. Webhooks
-✅ Always verify signatures
+- Always verify signatures
 ```python
 if not verify_signature(payload, signature, secret):
     return 401
 ```
 
-✅ Return 2xx quickly, process asynchronously
+- Return 2xx quickly, process asynchronously
 ```python
 @webhook_handler
 def handle_webhook(payload):
@@ -544,7 +550,7 @@ def handle_webhook(payload):
 ```
 
 ### 5. Error Handling
-✅ Check error codes for specific actions
+- Check error codes for specific actions
 ```python
 if error["code"] == "CONCURRENT_JOB_CONFLICT":
     job_id = error["details"]["existingJobId"]
@@ -618,14 +624,14 @@ if error["code"] == "CONCURRENT_JOB_CONFLICT":
 
 **Liongard Data API v3** provides a comprehensive, production-ready API for vendor integrations with:
 
-✅ **27 endpoints** covering all core resources  
-✅ **62 schemas** with rich field definitions  
-✅ **Asynchronous processing** for scalability  
-✅ **Job management** with cancellation support  
-✅ **Metrics system** for flexible data extraction  
-✅ **Webhook subscriptions** for real-time updates  
-✅ **Concurrency control** preventing data conflicts  
-✅ **OpenAPI 3.1 compliance** with zero warnings  
+- **27 endpoints** covering all core resources  
+- **62 schemas** with rich field definitions  
+- **Asynchronous processing** for scalability  
+- **Job management** with cancellation support  
+- **Metrics system** for flexible data extraction  
+- **Webhook subscriptions** for real-time updates  
+- **Concurrency control** preventing data conflicts  
+- **OpenAPI 3.1 compliance** with zero warnings  
 
 **Key Differentiators from v1/v2:**
 - Non-blocking dataprint ingestion
