@@ -1,0 +1,34 @@
+{
+  "name": "Vendor Sync",
+  "endpointUrl": "https://vendor.example.com/liongard/webhooks",
+  "secret": "replace-with-shared-secret",
+  "objects": [
+    {
+      "object": "assets",
+      "events": [
+        "created",
+        "updated"
+      ],
+      "where": "(environmentId = \"env_123\" AND assetType = \"Workstation\")",
+      "expand": [
+        "installedSoftware"
+      ],
+      "delivery": {
+        "mode": "diff",
+        "includeSnapshot": "minimal"
+      }
+    },
+    {
+      "object": "alerts",
+      "events": [
+        "created",
+        "updated"
+      ],
+      "where": "(environmentId = \"env_123\")",
+      "delivery": {
+        "mode": "full",
+        "includeSnapshot": "full"
+      }
+    }
+  ]
+}

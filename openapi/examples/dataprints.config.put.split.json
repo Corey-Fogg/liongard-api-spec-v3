@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "dataStructure": "split",
+    "environments": {
+      "arrayPath": "$.clients[*]",
+      "namePath": "$.name",
+      "idPath": "$.id"
+    },
+    "assets": {
+      "arrayPath": "$.devices[*]",
+      "namePath": "$.hostname",
+      "typePath": "$.type",
+      "uniqueIdPath": "$.serial_number",
+      "environmentIdPath": "$.client_id"
+    },
+    "views": [
+      {
+        "type": "workstation",
+        "fields": [
+          "hostname",
+          "ip_address",
+          "os",
+          "primary_user"
+        ]
+      }
+    ]
+  }
+}

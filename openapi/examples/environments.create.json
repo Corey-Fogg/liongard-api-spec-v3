@@ -1,0 +1,7 @@
+{
+  "name": "Acme Manufacturing",
+  "description": "Primary customer environment",
+  "shortName": "ACME",
+  "tier": "Core",
+  "parentEnvironmentId": null
+}

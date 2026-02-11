@@ -1,0 +1,1255 @@
+openapi: 3.1.0
+info:
+  title: Liongard Data API
+  version: "3.0.0"
+  description: Vendor consumption API for Liongard data (v3). Uses camelCase, supports pagination, filtering, dynamic expand, and first-class webhooks.
+servers:
+  - url: https://api.liongard.example.com
+security:
+  - bearerAuth: []
+tags:
+  - name: Alerts
+  - name: Assets
+  - name: Environments
+  - name: Identities
+  - name: Inspectors
+  - name: Meta
+  - name: Webhooks
+
+paths:
+  /v3/alerts:
+    get:
+      tags: [Alerts]
+      summary: List alerts
+      operationId: listAlerts
+      parameters:
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/strictExpand"
+        - $ref: "#/components/parameters/where"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/alertListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Alerts]
+      summary: Create an alert
+      operationId: createAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/alertCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/alertGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/alerts/{alertId}:
+    get:
+      tags: [Alerts]
+      summary: Get an alert
+      operationId: getAlert
+      parameters:
+        - $ref: "#/components/parameters/alertId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/alertGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/assets:
+    get:
+      tags: [Assets]
+      summary: List assets
+      operationId: listAssets
+      parameters:
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/strictExpand"
+        - $ref: "#/components/parameters/where"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/assetListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/assets/{assetId}:
+    get:
+      tags: [Assets]
+      summary: Get an asset
+      operationId: getAsset
+      parameters:
+        - $ref: "#/components/parameters/assetId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/assetGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments:
+    get:
+      tags: [Environments]
+      summary: List environments
+      operationId: listEnvironments
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/where"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Environments]
+      summary: Create an environment
+      operationId: createEnvironment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/environmentCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}:
+    get:
+      tags: [Environments]
+      summary: Get an environment
+      operationId: getEnvironment
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/identities:
+    get:
+      tags: [Identities]
+      summary: List identities
+      operationId: listIdentities
+      parameters:
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/strictExpand"
+        - $ref: "#/components/parameters/where"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/identityListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/identities/{identityId}:
+    get:
+      tags: [Identities]
+      summary: Get an identity
+      operationId: getIdentity
+      parameters:
+        - $ref: "#/components/parameters/identityId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/identityGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors:
+    get:
+      tags: [Inspectors]
+      summary: List inspectors for an environment
+      operationId: listInspectorsByEnvironment
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/where"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inspectorListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors/{inspectorId}:
+    get:
+      tags: [Inspectors]
+      summary: Get an inspector
+      operationId: getInspector
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/inspectorGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors/{inspectorId}/dataprints:
+    get:
+      tags: [Inspectors]
+      summary: List dataprints for an inspector
+      operationId: listDataprints
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/strictExpand"
+        - $ref: "#/components/parameters/where"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Inspectors]
+      summary: Create a dataprint (ingestion push)
+      operationId: createDataprint
+      security:
+        - apiKeyAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/dataprintCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ingestionResultResponse"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ingestionResultResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "409":
+          description: Config version mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/errorResponse"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors/{inspectorId}/dataprints/latest:
+    get:
+      tags: [Inspectors]
+      summary: Get latest dataprint for an inspector
+      operationId: getLatestDataprint
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+        - $ref: "#/components/parameters/expand"
+        - $ref: "#/components/parameters/strictExpand"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/environments/{environmentId}/inspectors/{inspectorId}/dataprints/config:
+    get:
+      tags: [Inspectors]
+      summary: Get dataprint config for an inspector
+      operationId: getDataprintConfig
+      security:
+        - apiKeyAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintConfigGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    put:
+      tags: [Inspectors]
+      summary: Set dataprint config for an inspector
+      operationId: upsertDataprintConfig
+      security:
+        - apiKeyAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/environmentId"
+        - $ref: "#/components/parameters/inspectorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/dataprintConfigUpsertRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dataprintConfigGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/meta/objects:
+    get:
+      tags: [Meta]
+      summary: List object capabilities
+      operationId: listObjectCapabilities
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/objectCapabilitiesResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/meta/assets/types:
+    get:
+      tags: [Meta]
+      summary: List asset types and supported expansions
+      operationId: listAssetTypeCapabilities
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/assetTypeCapabilitiesResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/webhooks/subscriptions:
+    get:
+      tags: [Webhooks]
+      summary: List webhook subscriptions
+      operationId: listWebhookSubscriptions
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/webhookSubscriptionListResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    post:
+      tags: [Webhooks]
+      summary: Create a webhook subscription
+      operationId: createWebhookSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/webhookSubscriptionCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/webhookSubscriptionGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+  /v3/webhooks/subscriptions/{subscriptionId}:
+    get:
+      tags: [Webhooks]
+      summary: Get a webhook subscription
+      operationId: getWebhookSubscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/webhookSubscriptionGetResponse"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    patch:
+      tags: [Webhooks]
+      summary: Update a webhook subscription
+      operationId: updateWebhookSubscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/webhookSubscriptionPatchRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/webhookSubscriptionGetResponse"
+        "400":
+          $ref: "#/components/responses/badRequest"
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "422":
+          $ref: "#/components/responses/unprocessableEntity"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+    delete:
+      tags: [Webhooks]
+      summary: Delete a webhook subscription
+      operationId: deleteWebhookSubscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/notFound"
+        "429":
+          $ref: "#/components/responses/rateLimited"
+
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    alertId:
+      name: alertId
+      in: path
+      required: true
+      schema: { type: string }
+
+    assetId:
+      name: assetId
+      in: path
+      required: true
+      schema: { type: string }
+
+    environmentId:
+      name: environmentId
+      in: path
+      required: true
+      schema: { type: string }
+
+    expand:
+      name: expand
+      in: query
+      required: false
+      schema:
+        type: array
+        items: { type: string }
+      style: form
+      explode: true
+      description: Dynamic expansions for nested fields. No expand-all. Use meta endpoints to discover supported values.
+
+    identityId:
+      name: identityId
+      in: path
+      required: true
+      schema: { type: string }
+
+    inspectorId:
+      name: inspectorId
+      in: path
+      required: true
+      schema: { type: string }
+
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100
+
+    offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    sort:
+      name: sort
+      in: query
+      required: false
+      schema: { type: string }
+      description: Field name, prefix with '-' for descending.
+
+    strictExpand:
+      name: strictExpand
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: If true, unsupported expand values return 422.
+
+    subscriptionId:
+      name: subscriptionId
+      in: path
+      required: true
+      schema: { type: string }
+
+    where:
+      name: where
+      in: query
+      required: false
+      schema: { type: string }
+      description: Field-based filter expression using model fields.
+
+  responses:
+    badRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+    notFound:
+      description: Not Found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+    rateLimited:
+      description: Too Many Requests
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+    unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+    unprocessableEntity:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/errorResponse" }
+
+  schemas:
+    alert:
+      type: object
+      additionalProperties: true
+      required: [alertId, environmentId, updatedAt]
+      properties:
+        alertId: { type: string }
+        environmentId: { type: string }
+        commonId: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        name: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        priority: { type: string, nullable: true }
+        source: { type: string, nullable: true }
+        owner: { type: string, nullable: true }
+        percentComplete: { type: integer, nullable: true }
+        autoClose: { type: integer, nullable: true }
+        status: { type: string, nullable: true }
+        roarStatus: { type: integer, nullable: true }
+        keywords: { type: string, nullable: true }
+        startDate: { type: string, nullable: true }
+        dueDate: { type: string, nullable: true }
+        externalId: { type: integer, nullable: true }
+        inspectorId: { type: string, nullable: true }
+        visible: { type: boolean, nullable: true }
+        createdBy: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedBy: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time }
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    alertCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [environmentId, name]
+      properties:
+        environmentId: { type: string }
+        commonId: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        priority: { type: string, nullable: true }
+        source: { type: string, nullable: true }
+        owner: { type: string, nullable: true }
+        percentComplete: { type: integer, nullable: true }
+        autoClose: { type: integer, nullable: true }
+        status: { type: string, nullable: true }
+        roarStatus: { type: integer, nullable: true }
+        keywords: { type: string, nullable: true }
+        startDate: { type: string, nullable: true }
+        dueDate: { type: string, nullable: true }
+        externalId: { type: integer, nullable: true }
+        inspectorId: { type: string, nullable: true }
+        visible: { type: boolean, nullable: true }
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    alertGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/alert" }
+
+    alertListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/alert" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+        warnings:
+          type: array
+          items: { type: string }
+
+    asset:
+      type: object
+      additionalProperties: true
+      required: [assetId, environmentId, updatedAt]
+      properties:
+        assetId: { type: string }
+        environmentId: { type: string }
+        assetType: { type: string, nullable: true }
+        name: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time }
+        version: { type: integer, nullable: true }
+
+    assetGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/asset" }
+
+    assetListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/asset" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+        warnings:
+          type: array
+          items: { type: string }
+
+    assetTypeCapabilities:
+      type: object
+      additionalProperties: false
+      required: [assetType, expandableFields]
+      properties:
+        assetType: { type: string }
+        expandableFields:
+          type: array
+          items: { type: string }
+
+    assetTypeCapabilitiesResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/assetTypeCapabilities" }
+
+    dataprint:
+      type: object
+      additionalProperties: true
+      required: [dataprintId, inspectorId, updatedAt]
+      properties:
+        dataprintId: { type: string }
+        inspectorId: { type: string }
+        capturedAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time }
+        version: { type: integer, nullable: true }
+
+    dataprintConfig:
+      type: object
+      additionalProperties: false
+      required: [configVersion, environmentId, inspectorId, metadata, updatedAt]
+      properties:
+        configVersion: { type: integer, minimum: 1 }
+        environmentId: { type: string }
+        inspectorId: { type: string }
+        metadata: { $ref: "#/components/schemas/ingestionMetadata" }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time }
+
+    dataprintConfigGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/dataprintConfig" }
+
+    dataprintConfigUpsertRequest:
+      type: object
+      additionalProperties: false
+      required: [metadata]
+      properties:
+        metadata: { $ref: "#/components/schemas/ingestionMetadata" }
+
+    dataprintCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        configVersion:
+          type: integer
+          minimum: 1
+          nullable: true
+        data:
+          type: object
+          additionalProperties: true
+
+    dataprintGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/dataprint" }
+
+    dataprintListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/dataprint" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+        warnings:
+          type: array
+          items: { type: string }
+
+    environment:
+      type: object
+      additionalProperties: true
+      required: [environmentId, updatedAt]
+      properties:
+        environmentId: { type: string }
+        name: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        parentEnvironmentId: { type: string, nullable: true }
+        shortName: { type: string, nullable: true }
+        tier: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time }
+        version: { type: integer, nullable: true }
+
+    environmentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string, nullable: true }
+        parentEnvironmentId: { type: string, nullable: true }
+        shortName: { type: string, nullable: true }
+        tier: { type: string, nullable: true }
+
+    environmentGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/environment" }
+
+    environmentListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/environment" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    errorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details:
+              type: object
+              additionalProperties: true
+
+    identity:
+      type: object
+      additionalProperties: true
+      required: [identityId, environmentId, updatedAt]
+      properties:
+        identityId: { type: string }
+        environmentId: { type: string }
+        identityType: { type: string, nullable: true }
+        displayName: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time }
+        version: { type: integer, nullable: true }
+
+    identityGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/identity" }
+
+    identityListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/identity" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+        warnings:
+          type: array
+          items: { type: string }
+
+    ingestionAssetsMetadata:
+      type: object
+      additionalProperties: false
+      required: [arrayPath, namePath, typePath, uniqueIdPath]
+      properties:
+        arrayPath: { type: string }
+        namePath: { type: string }
+        typePath: { type: string }
+        uniqueIdPath: { type: string }
+        environmentIdPath: { type: string, nullable: true }
+
+    ingestionDataStructure:
+      type: string
+      enum: [tiered, split]
+
+    ingestionEnvironmentsMetadata:
+      type: object
+      additionalProperties: false
+      required: [arrayPath, idPath, namePath]
+      properties:
+        arrayPath: { type: string }
+        namePath: { type: string }
+        idPath: { type: string }
+
+    ingestionMetadata:
+      type: object
+      additionalProperties: false
+      required: [dataStructure, environments, assets]
+      properties:
+        dataStructure: { $ref: "#/components/schemas/ingestionDataStructure" }
+        environments: { $ref: "#/components/schemas/ingestionEnvironmentsMetadata" }
+        assets: { $ref: "#/components/schemas/ingestionAssetsMetadata" }
+        views:
+          type: array
+          items: { $ref: "#/components/schemas/ingestionView" }
+
+    ingestionResultResponse:
+      type: object
+      additionalProperties: false
+      required: [accepted, environmentsProcessed, assetsProcessed, warnings, errors]
+      properties:
+        accepted: { type: boolean }
+        environmentsProcessed: { type: integer, minimum: 0 }
+        assetsProcessed: { type: integer, minimum: 0 }
+        warnings:
+          type: array
+          items: { type: string }
+        errors:
+          type: array
+          items: { type: string }
+
+    ingestionView:
+      type: object
+      additionalProperties: false
+      required: [type, fields]
+      properties:
+        type: { type: string }
+        fields:
+          type: array
+          items: { type: string }
+
+    inspector:
+      type: object
+      additionalProperties: true
+      required: [inspectorId, updatedAt]
+      properties:
+        inspectorId: { type: string }
+        name: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+        lastRunAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time }
+        version: { type: integer, nullable: true }
+
+    inspectorGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/inspector" }
+
+    inspectorListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/inspector" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    objectCapabilities:
+      type: object
+      additionalProperties: false
+      required: [object, filterableFields, expandableFields, events]
+      properties:
+        object:
+          type: string
+          enum: [alerts, assets, environments, identities, inspectors]
+        filterableFields:
+          type: array
+          items: { type: string }
+        expandableFields:
+          type: array
+          items: { type: string }
+        events:
+          type: array
+          items:
+            type: string
+            enum: [created, updated, deleted]
+
+    objectCapabilitiesResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/objectCapabilities" }
+
+    pagination:
+      type: object
+      additionalProperties: false
+      required: [limit, offset, count]
+      properties:
+        limit: { type: integer }
+        offset: { type: integer }
+        count: { type: integer }
+
+    webhookDeliveryMode:
+      type: string
+      enum: [full, diff]
+
+    webhookObject:
+      type: string
+      enum: [alerts, assets, environments, identities, inspectors]
+
+    webhookObjectSubscription:
+      type: object
+      additionalProperties: false
+      required: [object, events]
+      properties:
+        object: { $ref: "#/components/schemas/webhookObject" }
+        events:
+          type: array
+          items:
+            type: string
+            enum: [created, updated, deleted]
+        where: { type: string, nullable: true }
+        expand:
+          type: array
+          items: { type: string }
+        delivery:
+          type: object
+          additionalProperties: false
+          required: [mode]
+          properties:
+            mode: { $ref: "#/components/schemas/webhookDeliveryMode" }
+            includeSnapshot:
+              type: string
+              enum: [none, minimal, full]
+              default: minimal
+
+    webhookSubscription:
+      type: object
+      additionalProperties: false
+      required: [subscriptionId, status, endpointUrl, objects, createdAt, updatedAt]
+      properties:
+        subscriptionId: { type: string }
+        name: { type: string, nullable: true }
+        status:
+          type: string
+          enum: [enabled, disabled]
+        endpointUrl: { type: string, format: uri }
+        objects:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/webhookObjectSubscription" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    webhookSubscriptionCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [endpointUrl, secret, objects]
+      properties:
+        name: { type: string, nullable: true }
+        endpointUrl: { type: string, format: uri }
+        secret: { type: string }
+        objects:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/webhookObjectSubscription" }
+
+    webhookSubscriptionGetResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/webhookSubscription" }
+
+    webhookSubscriptionListResponse:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/webhookSubscription" }
+        pagination: { $ref: "#/components/schemas/pagination" }
+
+    webhookSubscriptionPatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, nullable: true }
+        status:
+          type: string
+          enum: [enabled, disabled]
+        endpointUrl: { type: string, format: uri, nullable: true }
+        secret: { type: string, nullable: true }
+        objects:
+          type: array
+          items: { $ref: "#/components/schemas/webhookObjectSubscription" }
