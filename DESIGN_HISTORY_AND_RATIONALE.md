@@ -7,15 +7,9 @@ nav_order: 3
 
 ## Executive Summary
 
-Liongard Vendor API v3 is the **first external-facing API** built specifically for vendor integrations. This is not a v1/v2 rewrite - it's a ground-up design that learned from internal API limitations while establishing a stable, production-grade contract for external partners.
+The Liongard Vendor API v3 is built specifically for vendor integrations, designed around the patterns vendors actually need: async processing, webhooks, standard filtering, and clean response formats.
 
-**Why v3 Exists:**
-- v1/v2 were internal APIs optimized for Liongard's UI
-- Vendors need different patterns (async, webhooks, filtering)
-- External APIs require stability contracts internal APIs don't need
-- Vendor use cases differ fundamentally from UI use cases
-
-**Key Differentiators:**
+**Key Design Principles:**
 - Async processing (non-blocking)
 - Proper HTTP semantics (headers for metadata)
 - Standard filtering (RSQL)
@@ -104,9 +98,8 @@ Environment-scoped routes optional
 - Aligns with webhook patterns (global subscriptions)
 
 **Schema Alignment:**
-- Based on v1 Task schema
-- Removed "Task" terminology publicly
-- Kept field parity without internal coupling
+- Removed internal "Task" terminology from the public API
+- Clean naming conventions throughout
 
 ---
 
@@ -203,18 +196,7 @@ alerts = get("/v3/alerts?expand=environment,inspector")
 4. Cleaned alphabetical structure
 5. Removed unnecessary verbosity
 
-**Before:**
-```json
-POST /v3/alerts
-200 OK
-{
-  "data": {
-    "alertId": "alert_123"
-  }
-}
-```
-
-**After:**
+**Result:**
 ```json
 POST /v3/alerts
 201 Created
@@ -243,17 +225,9 @@ POST /v3/alerts
 ```
 
 **Schema Strategy:**
-- Use v1/v2 field definitions as baseline
-- Keep v3-clean naming (camelCase)
-- Avoid "Task" terminology publicly
-- Preserve field parity without coupling to internals
-
-**Example:**
-```
-Internal: Task.DueDate
-v1/v2: DueDate
-v3: dueDate
-```
+- Clean camelCase naming throughout
+- Avoid internal "Task" terminology in the public API
+- Decoupled from internal data model
 
 ---
 
@@ -306,28 +280,17 @@ Webhook: POST /v3/webhooks/subscriptions
 
 ## Major Structural Decisions
 
-### 1. Terminology: "Dataprint" not "Ingestion"
+### 1. Terminology: "Dataprint"
 
-**Old (v1/v2):** Ingestion, ingestion endpoint, ingested data  
-**New (v3):** Dataprint, dataprint endpoint, dataprint data
+The API uses "Dataprint" rather than internal jargon like "Ingestion."
 
 **Rationale:**
-- "Ingestion" is internal jargon
-- "Dataprint" is customer-facing term
+- "Dataprint" is a customer-facing term
 - Aligns with Liongard's product terminology
 - More intuitive for vendors
 
 ### 2. Async Processing Pattern
 
-**v1/v2 Pattern:**
-```
-POST /v1/dataprints
-[waits 30-120 seconds]
-200 OK
-{ "accepted": true, "assetsProcessed": 5 }
-```
-
-**v3 Pattern:**
 ```
 POST /v3/.../dataprints
 [returns immediately]
@@ -347,21 +310,6 @@ GET /v3/jobs/job_123
 - Webhook-compatible
 
 ### 3. Response Format: No Wrappers
-
-**v1/v2 Pattern:**
-```json
-{
-  "data": {
-    "alertId": "alert_123"
-  },
-  "pagination": {
-    "limit": 100,
-    "offset": 0
-  }
-}
-```
-
-**v3 Pattern:**
 
 **Single Resource:**
 ```json
@@ -396,12 +344,6 @@ Link: <url>; rel="next"
 
 ### 4. Filtering: RSQL Standard
 
-**v1/v2 Pattern:**
-```
-?status__in=open,in_progress&priority__gte=high
-```
-
-**v3 Pattern:**
 ```
 ?filter=status=in=(open,in_progress);priority>=high
 ```
@@ -532,34 +474,6 @@ PUT /v3/environments/{envId}/inspectors/{inspectorId}/config
 
 ---
 
-## Why v3 is Better Than v1/v2
-
-### For Vendors
-
-| Aspect | v1/v2 | v3 |
-|--------|-------|-----|
-| **Blocking** | Sync (30-120s wait) | Async (immediate return) |
-| **Timeouts** | Frequent | None (job-based) |
-| **Progress** | None | Real-time tracking |
-| **Webhooks** | Limited | Full-featured |
-| **Filtering** | Complex syntax | Standard RSQL |
-| **Errors** | Generic | Detailed + actionable |
-| **Concurrency** | Race conditions | Controlled + clear errors |
-| **Response Size** | Wrapped objects | Direct + smaller |
-
-### For Liongard
-
-| Aspect | v1/v2 | v3 |
-|--------|-------|-----|
-| **Versioning** | Coupled to UI | Independent |
-| **Breaking Changes** | Impact UI | Isolated to vendors |
-| **Documentation** | Internal | Production-grade |
-| **Support** | Ticket-heavy | Self-service |
-| **Monitoring** | Limited | Job tracking built-in |
-| **Rate Limiting** | Shared with UI | Vendor-specific |
-
----
-
 ## Key Design Principles
 
 ### 1. Vendor-First Thinking
@@ -667,91 +581,6 @@ PUT /v3/environments/{envId}/inspectors/{inspectorId}/config
 - Webhooks with same filter syntax
 - Hierarchical resources
 - Meta discovery endpoints
-
----
-
-## Comparison: v1/v2 vs v3
-
-### Response Format
-
-**v1/v2:**
-```json
-{
-  "data": {
-    "ID": 123,
-    "Name": "Alert"
-  }
-}
-```
-
-**v3:**
-```json
-{
-  "alertId": "alert_123",
-  "name": "Alert"
-}
-```
-
-### Pagination
-
-**v1/v2:**
-```
-?page=1&pageSize=50
-Response body: { data: [...], pagination: {...} }
-```
-
-**v3:**
-```
-?limit=50&offset=0
-Response headers: X-Pagination-Limit, X-Pagination-Count, Link
-Response body: [...]
-```
-
-### Filtering
-
-**v1/v2:**
-```
-?conditions[]={"path":"Status","op":"eq","value":"active"}
-```
-
-**v3:**
-```
-?filter=status==active
-```
-
-### Dataprint Submission
-
-**v1/v2:**
-```
-POST /v1/dataprints
-[waits 30-120 seconds]
-200 OK
-{ "accepted": true }
-```
-
-**v3:**
-```
-POST /v3/.../dataprints
-[immediate]
-202 Accepted
-{ "jobId": "job_123", "pollUrl": "..." }
-
-GET /v3/jobs/job_123
-200 OK
-{ "status": "completed", "result": {...} }
-```
-
-### Identifiers
-
-**v1/v2:**
-```json
-{ "ID": 1234 }
-```
-
-**v3:**
-```json
-{ "alertId": "alert_1234" }
-```
 
 ---
 
@@ -889,7 +718,5 @@ Liongard Vendor API v3 represents a complete rethinking of how external integrat
 - **Standard** - HTTP semantics, industry patterns
 - **Stable** - Version-safe, clear contracts
 - **Powerful** - Webhooks, metrics, jobs
-
-This is not just "v1/v2 with better docs" - it's a fundamentally different approach designed for the way vendors actually build integrations.
 
 **The result:** An API that vendors want to use, not one they have to use.

@@ -30,17 +30,16 @@ permalink: /COMPREHENSIVE_API_GUIDE
 
 ## What is This API?
 
-The Liongard Vendor API v3 is **the first external-facing API** designed specifically for vendors and partners to integrate their products with Liongard. This is NOT a rewrite of internal v1/v2 APIs - it's a brand new API built from the ground up for vendor integrations.
+The Liongard Vendor API v3 is designed specifically for vendors and partners to integrate their products with Liongard. It's built from the ground up for vendor integrations.
 
 **Interactive API Documentation:**
 
 **[Open in Swagger UI](swagger-ui)**
 
 The interactive documentation lets you:
-- Browse all 26 endpoints
+- Browse all endpoints and schemas
 - View request/response examples
 - Test API calls directly in the browser
-- Explore all 36 data schemas
 - See pagination headers
 - Copy code snippets
 
@@ -2253,17 +2252,6 @@ def validate_dataprint(data, config):
 - **Real-time updates:** Webhooks notify you of events
 - **Flexible queries:** RSQL for filtering, JMESPath for metrics
 
-### Key Endpoints
-
-```
-POST /v3/inspectors                                              # Create inspector
-PUT  /v3/environments/{envId}/inspectors/{id}/config             # Configure
-POST /v3/environments/{envId}/inspectors/{id}/dataprints         # Push data
-GET  /v3/jobs/{jobId}                                            # Check status
-POST /v3/metrics/evaluate                                        # Get metrics
-POST /v3/webhooks/subscriptions                                  # Subscribe to events
-```
-
 ### Next Steps
 
 1. **Get API key** from Liongard
@@ -2279,8 +2267,6 @@ POST /v3/webhooks/subscriptions                                  # Subscribe to 
 
 - **Interactive API Docs** - [Swagger UI](swagger-ui)
 - **RSQL Filter Guide** - Complete filtering reference
-- **RSQL Migration Guide** - If coming from other syntax
-- **API Complete Summary** - Full endpoint reference
 - **Jobs & Async Processing** - Deep dive on jobs
 - **Response Format Guide** - Header-based pagination details
 

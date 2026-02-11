@@ -8,8 +8,6 @@ nav_order: 1
 
 The first external-facing API for Liongard, designed specifically for vendors and partners to integrate their products with the Liongard platform.
 
-**This is NOT a v1/v2 rewrite** — it's a ground-up design built for external vendor integrations.
-
 ---
 
 ## Getting Started
@@ -85,7 +83,6 @@ print(f"Processing: {job_id}")
 
 | Feature | Details |
 |---------|---------|
-| **26 endpoints** | Complete API surface |
 | **RSQL filtering** | Clean, powerful query syntax |
 | **Async processing** | Non-blocking dataprint operations |
 | **Metrics system** | JMESPath-based data extraction |
@@ -93,20 +90,6 @@ print(f"Processing: {job_id}")
 | **OpenAPI 3.1** | Standards-compliant specification |
 | **No wrappers** | Direct arrays/objects in responses |
 | **Header pagination** | RFC 5988 Link header |
-
----
-
-## What's Different from v1/v2?
-
-| Feature | v1/v2 (Internal) | v3 (Vendor) |
-|---------|------------------|-------------|
-| **Purpose** | Internal Liongard UI | External vendor integrations |
-| **Responses** | Wrapped in `{data: ...}` | Direct arrays/objects |
-| **Pagination** | In response body | In HTTP headers (RFC 5988) |
-| **Filtering** | FastAPI syntax (`__in`, `__gte`) | RSQL (`=in=`, `>=`) |
-| **Dataprints** | Synchronous (blocks) | Asynchronous (jobs) |
-| **Terminology** | "Ingestion" | "Dataprint" |
-| **Design Goal** | Optimize for UI | Optimize for vendors |
 
 ---
 

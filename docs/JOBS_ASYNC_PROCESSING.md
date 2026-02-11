@@ -777,42 +777,6 @@ def push_with_progress(env_id, inspector_id, data, api_key, progress_callback):
 
 ---
 
-## Migration from Synchronous v1/v2
-
-### v1/v2 Behavior
-```bash
-POST /v1/dataprints
-→ Waits for processing (blocks 30-120s)
-→ Returns final result directly
-```
-
-### v3 Behavior
-```bash
-POST /v3/.../dataprints
-→ Returns immediately (202 Accepted)
-→ Returns job ID
-→ Poll or callback for result
-```
-
-### Migration Strategy
-
-**Option 1: Add wrapper function** (easiest)
-```python
-# Wrap async API to behave synchronously
-result = push_dataprint_sync(env_id, inspector_id, data, api_key)
-```
-
-**Option 2: Refactor to async** (recommended)
-```python
-# Push data
-job_id = push_dataprint_async(env_id, inspector_id, data, api_key, callback_url)
-
-# Continue with other work...
-# Result arrives via callback later
-```
-
----
-
 ## Summary
 
 - **Dataprint POST returns 202 Accepted** with job ID
@@ -824,9 +788,4 @@ job_id = push_dataprint_async(env_id, inspector_id, data, api_key, callback_url)
 - **Error details** in failed jobs
 - **30-day retention** for completed jobs
 
-**API Changes:**
-- Dataprint POST: `201 Created` → `202 Accepted`
-- Returns: `dataprint processingResultResponse` → `dataprintJobResponse`
-- New: 2 job endpoints for tracking
-
-This enables non-blocking integrations while providing multiple ways to track completion!
+This enables non-blocking integrations while providing multiple ways to track completion.

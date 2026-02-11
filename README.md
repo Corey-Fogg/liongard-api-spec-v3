@@ -6,7 +6,7 @@ nav_exclude: true
 
 The first external-facing API for Liongard, designed specifically for vendors and partners to integrate their products with the Liongard platform.
 
-**This is NOT a v1/v2 rewrite** - it's a ground-up design built for external vendor integrations.
+Designed specifically for vendors and partners to integrate their products with the Liongard platform.
 
 ## Documentation
 
@@ -17,7 +17,7 @@ Browse and test the API directly in Swagger UI.
 ## Documentation Files
 
 ### Core Documentation
-- **[COMPREHENSIVE_API_GUIDE.md](COMPREHENSIVE_API_GUIDE.md)** - Complete vendor integration guide (2,200+ lines)
+- **[COMPREHENSIVE_API_GUIDE.md](COMPREHENSIVE_API_GUIDE.md)** - Complete vendor integration guide
 - **[DESIGN_HISTORY_AND_RATIONALE.md](DESIGN_HISTORY_AND_RATIONALE.md)** - Why v3 exists and how we got here
 - **[liongard-api-v3.yaml](liongard-api-v3.yaml)** - OpenAPI 3.1 specification
 
@@ -26,11 +26,7 @@ Browse and test the API directly in Swagger UI.
 - **[RESPONSE_FORMAT_GUIDE.md](docs/RESPONSE_FORMAT_GUIDE.md)** - Response structure and pagination
 - **[JOBS_ASYNC_PROCESSING.md](docs/JOBS_ASYNC_PROCESSING.md)** - Async operations deep dive
 - **[METRICS_FEATURE.md](docs/METRICS_FEATURE.md)** - JMESPath-based data extraction
-- **[API_COMPLETE_SUMMARY.md](docs/API_COMPLETE_SUMMARY.md)** - Full endpoint reference
 
-### Migration Guides
-- **[RSQL_MIGRATION_SUMMARY.md](docs/RSQL_MIGRATION_SUMMARY.md)** - Moving from old filter syntax
-- **[RESPONSE_UPDATE_SUMMARY.md](docs/RESPONSE_UPDATE_SUMMARY.md)** - Response format changes
 
 ## Quick Start
 
@@ -93,8 +89,6 @@ print(f"Processing: {job_id}")
 
 ## Key Features
 
-- **26 endpoints** - Complete API surface
-- **41 schemas** - Fully defined data models
 - **RSQL filtering** - Clean, powerful query syntax
 - **Async processing** - Non-blocking dataprint operations
 - **Metrics system** - JMESPath-based data extraction
@@ -102,18 +96,6 @@ print(f"Processing: {job_id}")
 - **OpenAPI 3.1** - Standards-compliant specification
 - **No wrappers** - Direct arrays/objects in responses
 - **Header pagination** - RFC 5988 Link header
-
-## What's Different from v1/v2?
-
-| Feature | v1/v2 (Internal) | v3 (Vendor) |
-|---------|------------------|-------------|
-| **Purpose** | Internal Liongard UI | External vendor integrations |
-| **Responses** | Wrapped in `{data: ...}` | Direct arrays/objects |
-| **Pagination** | In response body | In HTTP headers (RFC 5988) |
-| **Filtering** | FastAPI syntax (`__in`, `__gte`) | RSQL (`=in=`, `>=`) |
-| **Dataprints** | Synchronous (blocks) | Asynchronous (jobs) |
-| **Terminology** | "Ingestion" | "Dataprint" |
-| **Design Goal** | Optimize for UI | Optimize for vendors |
 
 ## Architecture
 
@@ -167,12 +149,7 @@ See [.clinerules](.clinerules) for detailed guidelines for Claude Code.
 
 ## Design Philosophy
 
-Read [DESIGN_HISTORY_AND_RATIONALE.md](DESIGN_HISTORY_AND_RATIONALE.md) to understand:
-- Why v3 exists
-- How design decisions were made
-- Evolution from initial concept to current state
-- Lessons learned
-- Comparison with v1/v2
+Read [DESIGN_HISTORY_AND_RATIONALE.md](DESIGN_HISTORY_AND_RATIONALE.md) to understand the design decisions behind the API.
 
 ## Use Cases
 
@@ -190,16 +167,6 @@ Your Security Tool → Push vulnerability data → Liongard → Get alerts → T
 ```
 Your Monitoring Tool → Push device data → Liongard → Track changes → Create tickets
 ```
-
-## API Stats
-
-- **Endpoints**: 26
-- **Schemas**: 41
-- **OpenAPI Version**: 3.1.0
-- **API Version**: 3.0.0
-- **Response Wrapper Schemas**: 0 (direct responses)
-- **Special Response Schemas**: 6 (jobs, metrics, meta)
-- **Validation**: Zero errors
 
 ## Links
 

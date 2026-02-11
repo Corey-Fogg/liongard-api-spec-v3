@@ -465,41 +465,8 @@ If a JMESPath query fails, the response includes an error:
 
 ---
 
-## Migration from v1/v2
-
-### v1 → v3 Changes
-| v1 | v3 | Notes |
-|----|----|----|
-| `/metrics/bulk` GET | `/v3/metrics/evaluate` POST | More powerful filtering |
-| `systems[]` param | `filters` in body | Cleaner API |
-| `MetricID` (integer) | `metricId` (string) | Consistent with v3 |
-
-### Example Migration
-**v1 Code:**
-```bash
-GET /metrics/bulk?systems=1,2,3&metrics=5,6&uuids=abc-123
-```
-
-**v3 Code:**
-```bash
-POST /v3/metrics/evaluate
-{
-  "metrics": ["metric_5", "metric_6", "abc-123"],
-  "filters": [{
-    "field": "systemId",
-    "op": "equal_to",
-    "value": ["system_1", "system_2", "system_3"]
-  }],
-  "pagination": {"limit": 100, "offset": 0}
-}
-```
-
----
-
 ## Summary
 
-- **6 new endpoints** for metric management and evaluation
-- **8 new schemas** defining metric structures
 - **JMESPath-based** querying for flexibility
 - **Custom metrics** support for vendor-specific needs
 - **Bulk evaluation** for efficient data retrieval
@@ -513,5 +480,4 @@ Metrics enable vendors to:
 - Track changes and trigger alerts
 - Aggregate data across multiple clients
 
-**Total API Endpoints**: 30 (24 + 6 metrics)  
-**Total Schemas**: 58 (50 + 8 metrics)
+See the [Interactive API Explorer](swagger-ui) for the full list of metric endpoints and schemas.
