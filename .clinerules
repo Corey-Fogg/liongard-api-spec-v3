@@ -1,0 +1,285 @@
+# Liongard Vendor API v3 Specification - Claude Code Instructions
+
+## Project Overview
+This is the OpenAPI specification for Liongard's first external-facing Vendor API (v3). This is NOT a rewrite of internal v1/v2 APIs - it's a brand new API designed from the ground up for vendor integrations.
+
+**Interactive Docs:** https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml
+
+## Core Principles
+
+### 1. This is a Vendor-Facing API
+- Designed for EXTERNAL vendors and partners
+- NOT for internal Liongard features or UI
+- Focus on vendor integration use cases (MSP tools, monitoring, security)
+
+### 2. Response Format (CRITICAL)
+- **List endpoints**: Return arrays directly `[...]` - NO wrapper objects
+- **Single resource**: Return objects directly `{...}` - NO wrapper objects  
+- **Pagination**: In HTTP headers (X-Pagination-*), NOT in response body
+- **Link header**: RFC 5988 format for pagination links
+- **Never use `data` wrapper** except for error responses
+
+### 3. Filtering
+- Use **RSQL** syntax (RESTful Service Query Language)
+- Operators: `==`, `!=`, `>`, `>=`, `<`, `<=`, `=in=()`, `=out=()`
+- Combinators: `;` (AND), `,` (OR), `()` (grouping)
+- Wildcards: `*` for pattern matching
+- **Never use** double underscores (`__in`, `__gte`, etc.) - that's old FastAPI syntax
+
+### 4. Terminology
+- Use **"dataprint"** not "ingestion"
+- Use **"inspector"** for the data source configuration
+- Use **"environment"** for customer/tenant
+- Inspectors are global, configurations are per-environment
+
+### 5. Async Processing
+- Dataprints are processed asynchronously
+- POST returns 202 Accepted with job ID
+- Only ONE dataprint job per inspector per environment at a time
+- 409 Conflict if concurrent job exists
+
+## Design History Context
+
+Read DESIGN_HISTORY_AND_RATIONALE.md for full context, but key evolution:
+
+1. Started with generic REST + webhooks vision
+2. Locked core conventions (camelCase, RSQL, async)
+3. Made alerts global (vendor use case)
+4. Moved ingestion under inspectors (natural hierarchy)
+5. Made expand dynamic and discoverable (version-safe)
+6. Elevated webhooks to first-class (same filter syntax as REST)
+7. Removed response wrappers (proper HTTP semantics)
+8. Moved pagination to headers (RFC 5988)
+
+**Major Pivots:**
+- Pagination: body → headers
+- Filtering: custom → RSQL standard
+- Ingestion: separate → under inspectors
+- Expand: enum → dynamic discovery
+- Terminology: "ingestion" → "dataprint"
+
+## When Making Changes
+
+### Modifying the Spec (liongard-api-v3.yaml)
+
+**Always:**
+- Maintain OpenAPI 3.1.0 compliance
+- Validate YAML syntax after changes
+- Keep response formats consistent (no wrappers)
+- Add pagination headers to list endpoints
+- Use proper HTTP status codes
+
+**Response Schema Pattern:**
+```yaml
+# List endpoints
+responses:
+  '200':
+    description: OK
+    headers:
+      X-Pagination-Limit: {...}
+      X-Pagination-Offset: {...}
+      X-Pagination-Count: {...}
+      X-Pagination-Has-More: {...}
+      Link: {...}
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/resourceName'
+
+# Single resource endpoints
+responses:
+  '200':
+    description: OK
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/resourceName'
+```
+
+**Filter Parameter Pattern:**
+```yaml
+- name: filter
+  in: query
+  schema:
+    type: string
+  description: |
+    RSQL filter syntax:
+    - Operators: ==, !=, >, >=, <, <=, =in=(), =out=()
+    - Combinators: ; (AND), , (OR)
+    - Examples: status==active, priority=in=(high,critical)
+```
+
+### Adding New Endpoints
+
+1. **Determine async vs sync**
+   - Long operations (>5s): Return 202 with job
+   - Quick operations: Return 200/201 with result
+
+2. **Response structure**
+   - List: Array with pagination headers
+   - Single: Direct object
+   - Async: Job status object
+
+3. **Required parameters**
+   - limit/offset for lists
+   - filter for queryable resources
+   - expand for related resources
+
+4. **Status codes**
+   - 200: Success
+   - 201: Created
+   - 202: Async accepted
+   - 400: Validation error
+   - 401: Auth required
+   - 404: Not found
+   - 409: Conflict (concurrent job)
+   - 422: Unprocessable
+   - 429: Rate limited
+
+### Adding New Schemas
+
+**Naming conventions:**
+- Core objects: `alert`, `asset`, `environment`, etc.
+- Requests: `alertCreateRequest`, `alertPatchRequest`
+- Special responses: `dataprintJobResponse`, `metricEvaluateResponse`
+- **Never** use generic wrappers like `alertGetResponse`, `alertListResponse`
+
+**Required fields:**
+- ID fields: Always required and type string
+- Timestamps: ISO 8601 format, type string with format: date-time
+- Enums: Use enum with examples
+
+### Updating Documentation
+
+When changing the spec, also update:
+1. **COMPREHENSIVE_API_GUIDE.md** - Code examples and workflows
+2. **RESPONSE_FORMAT_GUIDE.md** - If changing response structure
+3. **RSQL_FILTER_GUIDE.md** - If adding filterable fields
+4. **API_COMPLETE_SUMMARY.md** - Endpoint counts and stats
+
+## Common Tasks
+
+### Add a New Resource
+
+1. Create core schema in `#/components/schemas/`
+2. Add create/patch request schemas if needed
+3. Add endpoints in `#/paths/`
+4. Add to appropriate tag
+5. Update documentation
+6. Validate spec
+
+### Add Filtering to an Endpoint
+
+1. Add filter parameter reference: `$ref: '#/components/parameters/filter'`
+2. Document filterable fields in description
+3. Add examples: `?filter=status==active;priority==critical`
+
+### Add Field Expansion
+
+1. Add expand parameter: `$ref: '#/components/parameters/expand'`
+2. Document expandable fields
+3. Show expanded schema in examples
+
+### Change Response Format
+
+**DON'T** - Response format is standardized. Only add new fields, never change structure.
+
+## Validation Commands
+
+```bash
+# Validate YAML syntax
+python3 -c "import yaml; yaml.safe_load(open('liongard-api-v3.yaml'))"
+
+# Check in Swagger Editor
+# https://editor.swagger.io/
+
+# Validate against OpenAPI 3.1
+npx @apidevtools/swagger-cli validate liongard-api-v3.yaml
+```
+
+## Testing Changes
+
+1. **Swagger UI**: Paste spec into https://editor.swagger.io/
+2. **Redoc**: Use https://redocly.github.io/redoc/
+3. **GitHub Pages**: View at repository URL
+4. **Mock Server**: Use Prism or similar
+
+## Examples Location
+
+Code examples should be in `/examples/` directory:
+- Python: Full integration examples
+- JavaScript: Node.js/browser examples
+- cURL: Command-line testing
+
+## Questions to Ask Before Committing
+
+- [ ] Is YAML valid?
+- [ ] Are list endpoints returning arrays?
+- [ ] Are pagination headers present on lists?
+- [ ] Are single resources returning objects directly?
+- [ ] Is RSQL used for filtering (not double underscores)?
+- [ ] Are async operations using jobs pattern?
+- [ ] Are status codes appropriate?
+- [ ] Is terminology correct (dataprint not ingestion)?
+- [ ] Are examples updated?
+- [ ] Is documentation updated?
+
+## Key Design Decisions (From History)
+
+### Why Async Processing?
+- v1/v2 blocked for 30-120s
+- Vendors experienced timeouts
+- No progress tracking
+- Poor error handling
+
+Solution: 202 + job ID + polling/callbacks/webhooks
+
+### Why No Response Wrappers?
+- v1/v2 used `{data: {...}, pagination: {...}}`
+- Not proper HTTP semantics
+- Larger payloads
+- Worse caching
+
+Solution: Direct arrays/objects + headers for metadata
+
+### Why RSQL?
+- v1/v2 used `field__operator=value` syntax
+- Non-standard, hard to read
+- Limited documentation
+
+Solution: Industry standard RSQL with parsers and docs
+
+### Why Dataprint Not Ingestion?
+- "Ingestion" is internal jargon
+- "Dataprint" is customer-facing product term
+- Better vendor communication
+
+### Why Inspectors Under Environments?
+- Originally separate
+- Realized natural hierarchy: env → inspector → data
+- Prevents orphaned dataprints
+- Clear ownership model
+
+### Why Dynamic Expand?
+- Originally used enums per asset type
+- Asset types have different expandable fields
+- Would require API version bump for new asset types
+
+Solution: Meta endpoints for runtime discovery
+
+## References
+
+- OpenAPI 3.1 Spec: https://spec.openapis.org/oas/v3.1.0
+- RSQL Spec: https://github.com/jirutka/rsql-parser
+- RFC 5988 (Link header): https://tools.ietf.org/html/rfc5988
+- HTTP Status Codes: https://httpstatuses.com/
+
+## Contact
+
+For questions about this spec:
+- Check COMPREHENSIVE_API_GUIDE.md first
+- Review DESIGN_HISTORY_AND_RATIONALE.md for context
+- Review existing issues in repository
+- Create new issue with specific questions
