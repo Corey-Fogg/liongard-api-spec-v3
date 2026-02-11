@@ -10,7 +10,36 @@ permalink: /swagger-ui
   .swagger-ui .topbar { display: none; }
   .swagger-ui .info { margin: 20px 0; }
   #swagger-ui .swagger-ui { font-size: 14px; }
+  .docs-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #444;
+  }
+  .docs-nav a {
+    padding: 6px 12px;
+    border-radius: 4px;
+    background: #2d2d2d;
+    color: #ccc;
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .docs-nav a:hover {
+    background: #3d3d3d;
+    color: #fff;
+  }
 </style>
+
+<div class="docs-nav">
+  <a href="{{ '/' | relative_url }}">Home</a>
+  <a href="{{ '/COMPREHENSIVE_API_GUIDE' | relative_url }}">Integration Guide</a>
+  <a href="{{ '/docs/RSQL_FILTER_GUIDE' | relative_url }}">RSQL Filtering</a>
+  <a href="{{ '/docs/RESPONSE_FORMAT_GUIDE' | relative_url }}">Response Format</a>
+  <a href="{{ '/docs/JOBS_ASYNC_PROCESSING' | relative_url }}">Jobs & Async</a>
+  <a href="{{ '/docs/METRICS_FEATURE' | relative_url }}">Metrics</a>
+</div>
 
 <div id="swagger-ui"></div>
 
