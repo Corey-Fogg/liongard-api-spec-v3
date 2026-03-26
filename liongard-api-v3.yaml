@@ -2,40 +2,102 @@ openapi: 3.1.0
 info:
   title: Liongard Data API
   version: 3.0.0
-  description: "Vendor consumption API for Liongard data (v3). \n\nThis API is designed\
-    \ for system-to-system integration and data synchronization between vendors and\
-    \ Liongard.\nIt uses camelCase, supports pagination, filtering via FastAPI Filter\
-    \ syntax, dynamic expand, and first-class webhooks.\n\n**Authentication**: All\
-    \ endpoints use API Key authentication via X-API-Key header.\n\n**Key Concepts**:\n\
-    - **Environments**: Organizational units (clients, tenants, etc.)\n- **Inspectors**:\
-    \ Data collection configurations (global entities, scoped by environment for operations)\n\
-    - **Assets**: Inventory items created via inspector data mapping (read-only via\
-    \ API)\n- **Identities**: User/identity records created via inspector data mapping\
-    \ (read-only via API)\n- **Alerts**: Trackable issues/tasks (can create, update,\
-    \ close - not delete)\n- **Dataprints**: Point-in-time data captures from inspectors\n"
+  description: >
+    Liongard Data API v3 — the structured datalake API for IT infrastructure intelligence.
+
+
+    Liongard captures, normalizes, and structures operational data from across your IT
+    environment. This API enables vendors and integrations to **push data in** (via dataprints),
+    **pull insights out** (via metrics and queries), and **react to changes** (via webhooks).
+    Every piece of data is tagged with rich metadata — environment context, inspector lineage,
+    asset classification, and schema mappings — so it can be discovered, queried, and consumed
+    by both humans and AI systems.
+
+
+    The API uses camelCase field naming, RSQL filtering, header-based pagination (RFC 5988),
+    dynamic field expansion, and async processing with job tracking.
+
+
+    **Authentication**: All endpoints use API Key authentication via the `X-API-Key` header.
+
+
+    **Core Resources**:
+
+    - **Environments**: Organizational units (clients, tenants, sites) that scope all data
+
+    - **Inspectors**: Data collection definitions — what data to capture and how to map it
+
+    - **Systems**: Inspector + Environment instances — the runtime context where data is captured
+
+    - **Dataprints**: Point-in-time data snapshots pushed by inspectors (the raw datalake content)
+
+    - **Assets**: Inventory items extracted and classified from dataprint data (read-only)
+
+    - **Identities**: User/identity records extracted from dataprint data (read-only)
+
+    - **Metrics**: JMESPath queries that extract structured insights from raw dataprints
+
+    - **Alerts**: Trackable issues and tasks (create, update, close — not delete)
+
+    - **Jobs**: Async operation trackers for long-running processes
+
+    - **Webhooks**: Event subscriptions for real-time change notifications
+
+    - **Data Catalog**: Schema discovery and metadata for AI-accessible data exploration
 servers:
 - url: https://api.liongard.example.com
 security:
 - apiKeyAuth: []
 tags:
 - name: Alerts
-  description: Alert management (create, read, update - close via patch)
+  description: >
+    Trackable issues and tasks tied to environments. Alerts can be created, updated,
+    and closed (but never deleted) — making them ideal for compliance and audit trails.
 - name: Assets
-  description: Asset inventory (read-only - populated via inspector mappings)
+  description: >
+    IT asset inventory — servers, workstations, network devices, and more. Assets are
+    read-only via the API; they are automatically populated when inspectors map incoming
+    dataprint data to the asset inventory.
+- name: Data Catalog
+  description: >
+    Schema discovery and data dictionary for the Liongard datalake. Use these endpoints
+    to explore what data is available, understand field meanings, and discover relationships
+    between datasets — designed for both human and AI consumption.
 - name: Environments
-  description: Environment/client management
+  description: >
+    Organizational units that scope all data — typically representing clients, tenants,
+    or sites. Environments support hierarchical structures via parentEnvironmentId.
 - name: Identities
-  description: Identity records (read-only - populated via inspector mappings)
+  description: >
+    User and identity records discovered across inspected systems (Active Directory users,
+    M365 accounts, etc.). Read-only — populated automatically via inspector data mappings.
 - name: Inspectors
-  description: Inspector configuration and dataprint management
+  description: >
+    Data collection definitions that describe what data to capture and how to map it.
+    Inspectors are global entities; they are scoped to environments for runtime operations
+    like pushing dataprints and configuring data mappings.
 - name: Jobs
-  description: Asynchronous job tracking and status
+  description: >
+    Async operation tracking for long-running processes like dataprint ingestion.
+    Poll job status, track progress, or cancel pending operations.
 - name: Meta
-  description: API capability discovery
+  description: >
+    API capability and schema discovery. Query filterable fields, expandable fields,
+    supported events, and asset type metadata to build dynamic integrations.
 - name: Metrics
-  description: JMESPath-based metric evaluation and management
+  description: >
+    JMESPath-based queries that extract structured data points from raw dataprints.
+    Create custom metrics, evaluate them across systems, and enable change detection
+    for alerting workflows.
+- name: Systems
+  description: >
+    Runtime instances where an inspector operates within an environment. A system
+    represents the combination of an inspector and environment — the context in which
+    dataprints are captured and metrics are evaluated.
 - name: Webhooks
-  description: Webhook subscription management
+  description: >
+    Event subscriptions for real-time notifications. Subscribe to changes on any
+    resource type with RSQL filtering, field expansion, and delivery mode control.
 paths:
   /v3/alerts:
     get:
@@ -1315,6 +1377,293 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/systemMetricsResponse'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/bulk/dataprints:
+    post:
+      tags:
+      - Inspectors
+      summary: Bulk push dataprints across multiple environments
+      description: >
+        Submit dataprints for multiple inspector/environment combinations in a single request.
+        Each item in the batch is processed independently — one failure does not block others.
+        Returns a job ID per batch item for individual status tracking.
+
+
+        **Limits**: Maximum 50 items per request. Each item is subject to the same
+        concurrency constraints as individual dataprint submissions (1 job per
+        inspector per environment).
+      operationId: bulkCreateDataprints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bulkDataprintRequest'
+      responses:
+        '202':
+          description: Accepted - All items submitted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bulkDataprintResponse'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/bulk/metrics/evaluate:
+    post:
+      tags:
+      - Metrics
+      summary: Bulk evaluate metrics across many systems
+      description: >
+        Evaluate a large set of metrics across many systems in a single request.
+        Useful for generating comprehensive reports or dashboard snapshots.
+        Supports up to 100 metric IDs and returns results grouped by system.
+
+
+        **Rate Limit**: 10 requests per minute per API key (due to computational cost).
+      operationId: bulkEvaluateMetrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bulkMetricEvaluateRequest'
+      responses:
+        '202':
+          description: Accepted - Evaluation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/dataprintJobResponse'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/catalog/inspectors:
+    get:
+      tags:
+      - Data Catalog
+      summary: List inspector data schemas
+      description: >
+        Returns a catalog of all inspectors and the data schemas they produce. Each entry
+        describes the inspector's purpose, the structure of its dataprint output, available
+        fields, and example values. This endpoint is designed for AI and tooling to discover
+        what data exists in the Liongard datalake without needing to inspect raw dataprints.
+      operationId: listInspectorCatalog
+      parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by inspector category (e.g., identity, security, cloud)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/catalogEntry'
+          headers:
+            X-Pagination-Limit: *id001
+            X-Pagination-Offset: *id002
+            X-Pagination-Count: *id003
+            X-Pagination-Has-More: *id004
+            Link: *id005
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/catalog/inspectors/{inspectorId}:
+    get:
+      tags:
+      - Data Catalog
+      summary: Get detailed data schema for an inspector
+      description: >
+        Returns the complete data dictionary for a specific inspector type — every field
+        that appears in its dataprints, with types, descriptions, and example values.
+        Includes version history showing how the schema has evolved across inspector versions.
+      operationId: getInspectorCatalogEntry
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/catalogEntryDetail'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/catalog/inspectors/{inspectorId}/query-examples:
+    get:
+      tags:
+      - Data Catalog
+      summary: Get example JMESPath queries for an inspector
+      description: >
+        Returns a collection of example JMESPath queries that work against this inspector's
+        dataprint schema. Useful for building metrics, understanding data access patterns,
+        and training AI agents to query the datalake.
+      operationId: getInspectorQueryExamples
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/queryExamplesResponse'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/catalog/search:
+    get:
+      tags:
+      - Data Catalog
+      summary: Search across all data schemas
+      description: >
+        Full-text search across inspector schemas, field names, descriptions, and tags.
+        Use this to answer questions like "which inspectors capture MFA status?" or
+        "where can I find firewall rule data?" — essential for AI-driven data discovery.
+      operationId: searchCatalog
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Search query (searches field names, descriptions, inspector names, and tags)
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/catalogSearchResponse'
+          headers:
+            X-Pagination-Limit: *id001
+            X-Pagination-Offset: *id002
+            X-Pagination-Count: *id003
+            X-Pagination-Has-More: *id004
+            Link: *id005
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/systems:
+    get:
+      tags:
+      - Systems
+      summary: List systems
+      description: >
+        Returns all systems (inspector + environment combinations) across the platform.
+        Systems represent the runtime context where data is captured — each system ties
+        an inspector to an environment and tracks the latest dataprint, metric evaluations,
+        and inspection schedule.
+      operationId: listSystems
+      parameters:
+      - $ref: '#/components/parameters/expand'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/strictExpand'
+      - $ref: '#/components/parameters/filter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/system'
+          headers:
+            X-Pagination-Limit: *id001
+            X-Pagination-Offset: *id002
+            X-Pagination-Count: *id003
+            X-Pagination-Has-More: *id004
+            Link: *id005
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/systems/{systemId}:
+    get:
+      tags:
+      - Systems
+      summary: Get a system
+      description: >
+        Retrieve a single system by ID, including its current state, latest inspection
+        timestamp, and associated inspector/environment context.
+      operationId: getSystem
+      parameters:
+      - $ref: '#/components/parameters/systemId'
+      - $ref: '#/components/parameters/expand'
+      - $ref: '#/components/parameters/strictExpand'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/system'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/systems/{systemId}/view:
+    get:
+      tags:
+      - Systems
+      summary: Get the latest dataprint view for a system
+      description: >
+        Returns the latest raw dataprint data for this system — the complete snapshot
+        captured by the inspector. This is the data that metrics and JMESPath queries
+        evaluate against.
+
+
+        Use this endpoint to explore what data is available for a system before writing
+        metric queries, or to build custom reports from raw inspection data.
+      operationId: getSystemView
+      parameters:
+      - $ref: '#/components/parameters/systemId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/systemView'
         '401':
           $ref: '#/components/responses/unauthorized'
         '404':
@@ -2981,8 +3330,88 @@ components:
       properties:
         name:
           type: string
+          description: System name (kebab-case identifier, must be unique)
+          maxLength: 100
+          examples:
+          - my-custom-inspector
+        alias:
+          type: string
+          description: Human-friendly display name
+          examples:
+          - My Custom Inspector
         description:
           type: string
+          description: What this inspector captures and its purpose
+          examples:
+          - Collects network device configurations and compliance data
+        category:
+          type: string
+          enum:
+          - infrastructure
+          - security
+          - cloud
+          - networking
+          - appservices
+          - database
+          - identity
+          - backup
+          description: Inspector category for organization and discovery
+        author:
+          type: string
+          description: Inspector author or vendor name
+          examples:
+          - Acme Integrations
+        contactEmail:
+          type: string
+          format: email
+          description: Support contact email
+        helpLink:
+          type: string
+          format: uri
+          description: Documentation URL
+        logo:
+          type: string
+          format: uri
+          description: Logo image URL
+        icon:
+          type: string
+          format: uri
+          description: Icon image URL
+        defaultFrequency:
+          type: object
+          description: Recommended run frequency
+          properties:
+            type:
+              type: string
+              enum:
+              - hours
+              - days
+              - weeks
+            interval:
+              type: integer
+              minimum: 1
+        constraints:
+          type: object
+          description: Execution constraints and requirements
+          properties:
+            tiers:
+              type: array
+              items:
+                type: string
+                enum:
+                - production
+                - staging
+                - development
+                - test
+            platform:
+              type: array
+              items:
+                type: string
+                enum:
+                - windows
+                - linux
+                - macos
+                - cloud
         status:
           type: string
           enum:
@@ -2996,14 +3425,55 @@ components:
       properties:
         name:
           type: string
+          maxLength: 100
+        alias:
+          type: string
         description:
           type: string
+        category:
+          type: string
+          enum:
+          - infrastructure
+          - security
+          - cloud
+          - networking
+          - appservices
+          - database
+          - identity
+          - backup
+        author:
+          type: string
+        contactEmail:
+          type: string
+          format: email
+        helpLink:
+          type: string
+          format: uri
+        logo:
+          type: string
+          format: uri
+        icon:
+          type: string
+          format: uri
+        defaultFrequency:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+              - hours
+              - days
+              - weeks
+            interval:
+              type: integer
+              minimum: 1
         status:
           type: string
           enum:
           - active
           - inactive
           - disabled
+          - deprecated
     job:
       type: object
       additionalProperties: false
@@ -3454,20 +3924,29 @@ components:
           enum:
           - alerts
           - assets
+          - dataprints
           - environments
           - identities
           - inspectors
+          - jobs
+          - metrics
+          - systems
           description: Object type
         filterableFields:
           type: array
           items:
             type: string
-          description: Fields that can be used in filter queries
+          description: Fields that can be used in RSQL filter queries
         expandableFields:
           type: array
           items:
             type: string
-          description: Fields that can be expanded in responses
+          description: Fields that can be expanded in responses via the expand parameter
+        sortableFields:
+          type: array
+          items:
+            type: string
+          description: Fields that can be used for sorting via the sort parameter
         events:
           type: array
           items:
@@ -3476,6 +3955,11 @@ components:
             - created
             - updated
             - deleted
+            - submitted
+            - completed
+            - failed
+            - evaluated
+            - inspected
           description: Webhook events supported for this object type
     webhookDeliveryMode:
       type: string
@@ -3492,9 +3976,12 @@ components:
       enum:
       - alerts
       - assets
+      - dataprints
       - environments
       - identities
       - inspectors
+      - metrics
+      - systems
       description: Object type to subscribe to
     webhookObjectSubscription:
       type: object
@@ -3516,7 +4003,7 @@ components:
           description: Events to subscribe to for this object
         filter:
           type: string
-          description: FastAPI Filter expression to filter webhook events
+          description: RSQL filter expression to filter webhook events
         expand:
           type: array
           items:
@@ -3654,6 +4141,9 @@ components:
           - asset.created
           - asset.updated
           - asset.deleted
+          - dataprint.submitted
+          - dataprint.completed
+          - dataprint.failed
           - environment.created
           - environment.updated
           - environment.deleted
@@ -3663,6 +4153,13 @@ components:
           - inspector.created
           - inspector.updated
           - inspector.deleted
+          - metric.created
+          - metric.updated
+          - metric.deleted
+          - metric.evaluated
+          - system.created
+          - system.updated
+          - system.inspected
         createdAt:
           type: string
           format: date-time
@@ -3675,14 +4172,18 @@ components:
           - object
           properties:
             object:
-              description: The affected object (alert, asset, environment, identity,
-                or inspector)
+              description: >
+                The affected object. Type depends on the event — could be an alert,
+                asset, dataprint, environment, identity, inspector, metric, or system.
               oneOf:
               - $ref: '#/components/schemas/alert'
               - $ref: '#/components/schemas/asset'
+              - $ref: '#/components/schemas/dataprint'
               - $ref: '#/components/schemas/environment'
               - $ref: '#/components/schemas/identity'
               - $ref: '#/components/schemas/inspector'
+              - $ref: '#/components/schemas/metric'
+              - $ref: '#/components/schemas/system'
             previousAttributes:
               type: object
               additionalProperties: true
@@ -3694,9 +4195,12 @@ components:
               oneOf:
               - $ref: '#/components/schemas/alert'
               - $ref: '#/components/schemas/asset'
+              - $ref: '#/components/schemas/dataprint'
               - $ref: '#/components/schemas/environment'
               - $ref: '#/components/schemas/identity'
               - $ref: '#/components/schemas/inspector'
+              - $ref: '#/components/schemas/metric'
+              - $ref: '#/components/schemas/system'
       examples:
       - id: evt_1234567890
         type: alert.created
@@ -3760,6 +4264,11 @@ components:
           description: Human-readable status message
           examples:
           - Dataprint accepted for processing
+        estimatedCompletionSeconds:
+          type: integer
+          description: Estimated time to completion in seconds (best effort, not guaranteed)
+          examples:
+          - 120
         pollUrl:
           type: string
           format: uri
@@ -3785,7 +4294,13 @@ components:
                 examples:
                 - alert
                 - asset
+                - dataprint
                 - environment
+                - identity
+                - inspector
+                - job
+                - metric
+                - system
               filterableFields:
                 type: array
                 items:
@@ -3793,6 +4308,8 @@ components:
                 examples:
                 - - status
                   - priority
+                  - environmentId
+                  - inspectorId
                   - createdAt
               expandableFields:
                 type: array
@@ -3801,6 +4318,24 @@ components:
                 examples:
                 - - environment
                   - inspector
+              sortableFields:
+                type: array
+                items:
+                  type: string
+                examples:
+                - - createdAt
+                  - updatedAt
+                  - name
+                  - status
+              events:
+                type: array
+                items:
+                  type: string
+                description: Webhook events supported for this object type
+                examples:
+                - - created
+                  - updated
+                  - deleted
     assetTypeCapabilitiesResponse:
       type: object
       required:
@@ -3835,6 +4370,144 @@ components:
                 - - name
                   - ipAddress
                   - serialNumber
+    system:
+      type: object
+      additionalProperties: false
+      required:
+      - systemId
+      - inspectorId
+      - environmentId
+      - name
+      - updatedAt
+      properties:
+        systemId:
+          type: string
+          description: Unique system identifier
+          examples:
+          - system_3454
+        inspectorId:
+          type: string
+          description: Inspector this system runs
+          examples:
+          - inspector_13
+        environmentId:
+          type: string
+          description: Environment this system belongs to
+          examples:
+          - env_8888
+        name:
+          type: string
+          description: System display name (typically derived from environment + inspector)
+          examples:
+          - Acme Corp - Active Directory
+          maxLength: 255
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          - error
+          - pending
+          description: Current system status
+          examples:
+          - active
+        lastInspectedAt:
+          type: string
+          format: date-time
+          description: When the last successful inspection completed (UTC, ISO 8601)
+          examples:
+          - '2024-02-06T08:15:00Z'
+        nextInspectionAt:
+          type: string
+          format: date-time
+          description: Scheduled next inspection time (UTC, ISO 8601)
+          examples:
+          - '2024-02-07T08:15:00Z'
+        inspectionFrequency:
+          type: object
+          description: How often this system is inspected
+          properties:
+            type:
+              type: string
+              enum:
+              - hours
+              - days
+              - weeks
+              examples:
+              - days
+            interval:
+              type: integer
+              examples:
+              - 1
+        dataprintCount:
+          type: integer
+          description: Total number of dataprints captured for this system
+          examples:
+          - 47
+        latestDataprintId:
+          type: string
+          description: ID of the most recent dataprint
+          examples:
+          - dataprint_xyz789
+        inspector:
+          description: Expanded inspector object (when expand=inspector)
+          $ref: '#/components/schemas/inspector'
+        environment:
+          description: Expanded environment object (when expand=environment)
+          $ref: '#/components/schemas/environment'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC, ISO 8601)
+          examples:
+          - '2024-01-15T10:30:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC, ISO 8601)
+          examples:
+          - '2024-02-06T10:30:00Z'
+    systemView:
+      type: object
+      additionalProperties: false
+      required:
+      - systemId
+      - inspectorId
+      - environmentId
+      - capturedAt
+      - raw
+      properties:
+        systemId:
+          type: string
+          description: System this view belongs to
+          examples:
+          - system_3454
+        inspectorId:
+          type: string
+          examples:
+          - inspector_13
+        environmentId:
+          type: string
+          examples:
+          - env_8888
+        capturedAt:
+          type: string
+          format: date-time
+          description: When this dataprint was captured (UTC, ISO 8601)
+          examples:
+          - '2024-02-06T08:15:00Z'
+        raw:
+          type: object
+          additionalProperties: true
+          description: >
+            The complete raw dataprint data captured by the inspector. Structure varies
+            by inspector type. This is the data that JMESPath metric queries evaluate against.
+        schema:
+          type: object
+          additionalProperties: true
+          description: >
+            Inferred schema of the raw data, including field names, types, and nesting
+            structure. Useful for building queries or exploring unfamiliar data shapes.
     metricEvaluateResponse:
       type: array
       items:
@@ -3925,3 +4598,414 @@ components:
               evaluatedAt:
                 type: string
                 format: date-time
+    catalogEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - inspectorId
+      - name
+      - category
+      - fieldCount
+      properties:
+        inspectorId:
+          type: string
+          description: Inspector identifier
+          examples:
+          - inspector_13
+        name:
+          type: string
+          description: Inspector display name
+          examples:
+          - Active Directory
+        description:
+          type: string
+          description: What this inspector captures and why it matters
+          examples:
+          - >
+            Inspects Active Directory domains, returning domain configuration,
+            group policies, security settings, user accounts, and computer objects.
+        category:
+          type: string
+          description: Inspector category
+          examples:
+          - identity
+        tags:
+          type: array
+          items:
+            type: string
+          description: Searchable tags for data discovery
+          examples:
+          - - active-directory
+            - identity
+            - security
+            - compliance
+            - users
+            - groups
+        fieldCount:
+          type: integer
+          description: Total number of data fields produced by this inspector
+          examples:
+          - 142
+        topLevelFields:
+          type: array
+          items:
+            type: string
+          description: Top-level field names in the dataprint schema
+          examples:
+          - - DomainControllers
+            - Users
+            - Computers
+            - Groups
+            - GroupPolicies
+            - SecuritySettings
+        sampleMetrics:
+          type: array
+          description: Example metrics available for this inspector
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                examples:
+                - 'Active Directory: Count of Joined Computers'
+              query:
+                type: string
+                examples:
+                - length(Computers)
+        systemCount:
+          type: integer
+          description: Number of active systems using this inspector
+          examples:
+          - 85
+        lastUpdated:
+          type: string
+          format: date-time
+          description: When this catalog entry was last refreshed
+    catalogEntryDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - inspectorId
+      - name
+      - schema
+      properties:
+        inspectorId:
+          type: string
+          examples:
+          - inspector_13
+        name:
+          type: string
+          examples:
+          - Active Directory
+        description:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        schema:
+          type: object
+          description: >
+            Complete data dictionary describing every field in this inspector's
+            dataprint output. Organized hierarchically matching the JSON structure.
+          additionalProperties: true
+          examples:
+          - fields:
+            - name: Users
+              type: array
+              description: All user accounts in the Active Directory domain
+              items:
+                type: object
+                fields:
+                - name: DisplayName
+                  type: string
+                  description: User's display name
+                - name: Enabled
+                  type: boolean
+                  description: Whether the account is enabled
+                - name: LastLogonDate
+                  type: string
+                  description: Last successful login timestamp
+                - name: PasswordLastSet
+                  type: string
+                  description: When the password was last changed
+            - name: Computers
+              type: array
+              description: Computer objects joined to the domain
+        versions:
+          type: array
+          description: Schema version history showing how the data shape has evolved
+          items:
+            type: object
+            properties:
+              versionId:
+                type: string
+              releasedAt:
+                type: string
+                format: date-time
+              fieldsAdded:
+                type: array
+                items:
+                  type: string
+              fieldsRemoved:
+                type: array
+                items:
+                  type: string
+              fieldsModified:
+                type: array
+                items:
+                  type: string
+    queryExamplesResponse:
+      type: object
+      required:
+      - inspectorId
+      - examples
+      properties:
+        inspectorId:
+          type: string
+          examples:
+          - inspector_13
+        inspectorName:
+          type: string
+          examples:
+          - Active Directory
+        examples:
+          type: array
+          items:
+            type: object
+            required:
+            - name
+            - query
+            - description
+            properties:
+              name:
+                type: string
+                description: Human-readable name for this query
+                examples:
+                - Count of Enabled Users
+              query:
+                type: string
+                description: JMESPath expression
+                examples:
+                - 'length(Users[?Enabled==`true`])'
+              description:
+                type: string
+                description: What this query returns and when to use it
+                examples:
+                - Returns the total count of enabled (active) user accounts in the domain
+              returnType:
+                type: string
+                enum:
+                - number
+                - string
+                - boolean
+                - array
+                - object
+                description: Expected return type of the query
+                examples:
+                - number
+              tags:
+                type: array
+                items:
+                  type: string
+                description: Categorization tags
+                examples:
+                - - users
+                  - security
+                  - compliance
+    catalogSearchResponse:
+      type: object
+      required:
+      - results
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required:
+            - inspectorId
+            - inspectorName
+            - matchType
+            - matchValue
+            properties:
+              inspectorId:
+                type: string
+                description: Inspector containing the match
+              inspectorName:
+                type: string
+                description: Inspector display name
+              matchType:
+                type: string
+                enum:
+                - field
+                - description
+                - tag
+                - inspector_name
+                - metric_name
+                description: What type of match was found
+              matchValue:
+                type: string
+                description: The matched text
+              fieldPath:
+                type: string
+                description: JSONPath to the matched field (for field matches)
+                examples:
+                - Users[].MFAEnabled
+              relevanceScore:
+                type: number
+                description: Search relevance score (0-1)
+                examples:
+                - 0.95
+    bulkDataprintRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          description: Dataprint submissions to process (max 50 per request)
+          items:
+            type: object
+            required:
+            - environmentId
+            - inspectorId
+            - data
+            properties:
+              environmentId:
+                type: string
+                description: Target environment
+                examples:
+                - env_8888
+              inspectorId:
+                type: string
+                description: Target inspector
+                examples:
+                - inspector_13
+              data:
+                type: object
+                additionalProperties: true
+                description: Raw data payload (must conform to inspector's config mapping)
+        callbackUrl:
+          type: string
+          format: uri
+          description: Optional HTTPS URL to receive notification when all items complete
+    bulkDataprintResponse:
+      type: object
+      required:
+      - batchId
+      - items
+      properties:
+        batchId:
+          type: string
+          description: Unique identifier for this bulk submission
+          examples:
+          - batch_abc123
+        items:
+          type: array
+          items:
+            type: object
+            required:
+            - environmentId
+            - inspectorId
+            - status
+            properties:
+              environmentId:
+                type: string
+              inspectorId:
+                type: string
+              status:
+                type: string
+                enum:
+                - accepted
+                - rejected
+                description: Whether this item was accepted for processing
+              jobId:
+                type: string
+                description: Job ID for tracking (present when status is accepted)
+                examples:
+                - job_xyz789
+              error:
+                type: string
+                description: Rejection reason (present when status is rejected)
+                examples:
+                - Concurrent job already processing for this inspector/environment
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total items submitted
+              examples:
+              - 10
+            accepted:
+              type: integer
+              description: Items accepted for processing
+              examples:
+              - 8
+            rejected:
+              type: integer
+              description: Items rejected (conflicts, validation errors)
+              examples:
+              - 2
+    bulkMetricEvaluateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - metrics
+      properties:
+        metrics:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: Metric IDs to evaluate (max 100)
+          items:
+            type: string
+          examples:
+          - - metric_1
+            - metric_2
+            - metric_3
+        filters:
+          type: array
+          description: Filter which systems to evaluate against
+          items:
+            type: object
+            required:
+            - field
+            - op
+            - value
+            properties:
+              field:
+                type: string
+                enum:
+                - environmentId
+                - environmentName
+                - systemId
+                - inspectorId
+              op:
+                type: string
+                enum:
+                - equal_to
+                - contains
+                - does_not_contain
+                - matches_exactly
+                - starts_with
+                - ends_with
+                - in
+              value:
+                oneOf:
+                - type: string
+                - type: integer
+                - type: array
+                  items:
+                    oneOf:
+                    - type: string
+                    - type: integer
+        callbackUrl:
+          type: string
+          format: uri
+          description: HTTPS URL to receive results when evaluation completes
