@@ -2,11 +2,11 @@
 nav_exclude: true
 ---
 
-# Liongard Vendor API v3 Specification
+# Liongard Data API v3
 
-The first external-facing API for Liongard, designed specifically for vendors and partners to integrate their products with the Liongard platform.
+The structured datalake API for IT infrastructure intelligence. Liongard captures, normalizes, and structures operational data from across your IT environment. This API enables vendors and integrations to **push data in**, **pull insights out**, and **react to changes** in real time.
 
-Designed specifically for vendors and partners to integrate their products with the Liongard platform.
+Every piece of data is tagged with rich metadata — environment context, inspector lineage, asset classification, and schema mappings — so it can be discovered, queried, and consumed by both humans and AI systems.
 
 ## Documentation
 
@@ -89,10 +89,13 @@ print(f"Processing: {job_id}")
 
 ## Key Features
 
-- **RSQL filtering** - Clean, powerful query syntax
-- **Async processing** - Non-blocking dataprint operations
-- **Metrics system** - JMESPath-based data extraction
-- **Webhooks** - Real-time event notifications
+- **RSQL filtering** - Clean, powerful query syntax across all list endpoints
+- **Async processing** - Non-blocking dataprint operations with job tracking
+- **Metrics system** - JMESPath-based data extraction from raw dataprints
+- **Data Catalog** - Schema discovery and data dictionary for AI-accessible exploration
+- **Systems** - First-class resource linking inspectors to environments
+- **Bulk operations** - Push dataprints and evaluate metrics at scale
+- **Webhooks** - Real-time event notifications for all resource types
 - **OpenAPI 3.1** - Standards-compliant specification
 - **No wrappers** - Direct arrays/objects in responses
 - **Header pagination** - RFC 5988 Link header
@@ -100,16 +103,22 @@ print(f"Processing: {job_id}")
 ## Architecture
 
 ```
-Your Product → Push Dataprints → Liongard API → Process Async → Extract Metrics → Your Dashboard
+                    ┌─────────────────────────────────────────┐
+                    │          Liongard Datalake               │
+Your Product ──────►│  Dataprints → Assets → Metrics          │──────► Your Dashboard
+                    │  Environments → Systems → Identities    │──────► AI Agents
+Webhooks ◄──────────│  Data Catalog → Schema Discovery        │──────► Reports
+                    └─────────────────────────────────────────┘
 ```
 
 **Core Workflow:**
 1. Create Inspector (your integration definition)
 2. Configure per Environment (customer-specific mapping)
-3. Push Dataprints (your data)
+3. Push Dataprints (your data — single or bulk)
 4. Track Jobs (async processing)
 5. Extract Metrics (insights and aggregations)
-6. Receive Webhooks (real-time updates)
+6. Explore Data Catalog (discover schemas for AI consumption)
+7. Receive Webhooks (real-time updates)
 
 ## Development
 
@@ -188,4 +197,4 @@ For questions or issues:
 
 ---
 
-**Built for vendors, by vendors.**
+**Built for vendors. Structured for AI. Designed for scale.**
