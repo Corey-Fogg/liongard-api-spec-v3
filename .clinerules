@@ -1,7 +1,7 @@
-# Liongard Vendor API v3 Specification - Claude Code Instructions
+# Liongard Data API v3 Specification - Claude Code Instructions
 
 ## Project Overview
-This is the OpenAPI specification for Liongard's first external-facing Vendor API (v3). This is NOT a rewrite of internal v1/v2 APIs - it's a brand new API designed from the ground up for vendor integrations.
+This is the OpenAPI specification for the Liongard Data API (v3) — a structured datalake API for IT infrastructure intelligence. It enables vendors and integrations to push data in, pull insights out, and react to changes with rich metadata for AI accessibility.
 
 **Interactive Docs:** https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Corey-Fogg/liongard-api-spec-v3/refs/heads/main/liongard-api-v3.yaml
 

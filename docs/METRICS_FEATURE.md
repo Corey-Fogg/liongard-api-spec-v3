@@ -41,7 +41,7 @@ Returns all available metrics with filtering and pagination.
 **Query Parameters:**
 - `limit`, `offset` - Pagination
 - `sort` - Sort field
-- `filter` - FastAPI Filter syntax
+- `filter` - RSQL filter syntax
 
 **Response:** List of metric objects
 
@@ -234,7 +234,7 @@ metric:
 
 ```bash
 # Step 1: Find the metric
-GET /v3/metrics?filter=name__contains=Count of Joined Computers
+GET /v3/metrics?filter=name==*Count of Joined Computers*
 
 # Step 2: Evaluate for all clients
 POST /v3/metrics/evaluate

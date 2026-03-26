@@ -1,5 +1,5 @@
-title: Liongard Vendor API v3
-description: API specification and documentation for Liongard's vendor integration API
+title: Liongard Data API v3
+description: Structured datalake API for IT infrastructure intelligence
 remote_theme: just-the-docs/just-the-docs@v0.10.1
 
 url: https://corey-fogg.github.io
@@ -22,7 +22,7 @@ search:
 back_to_top: true
 back_to_top_text: "Back to top"
 
-footer_content: "Liongard Vendor API v3 Specification"
+footer_content: "Liongard Data API v3"
 
 exclude:
   - .clinerules

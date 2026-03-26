@@ -4,7 +4,7 @@ nav_order: 2
 permalink: /COMPREHENSIVE_API_GUIDE
 ---
 
-# Liongard Vendor API v3 - Complete Guide
+# Liongard Data API v3 - Complete Guide
 
 **Interactive API Explorer:** [Try it in Swagger UI](swagger-ui)
 
@@ -30,7 +30,7 @@ permalink: /COMPREHENSIVE_API_GUIDE
 
 ## What is This API?
 
-The Liongard Vendor API v3 is designed specifically for vendors and partners to integrate their products with Liongard. It's built from the ground up for vendor integrations.
+The Liongard Data API v3 is the structured datalake API for IT infrastructure intelligence. It enables vendors and integrations to push data in, pull insights out, and react to changes — with rich metadata that makes every field queryable by both humans and AI.
 
 **Interactive API Documentation:**
 
@@ -295,11 +295,22 @@ Metric = "Give me the count of offline servers"
 Job = "Is my dataprint done processing?"
 ```
 
-### 8. Webhooks
+### 8. Systems
 
-**What:** Real-time notifications when things change  
-**Think of it as:** "Call me when dataprint is processed"  
-**Used for:** Event-driven integrations  
+**What:** Inspector + environment combinations — the runtime context where data is captured
+**Think of it as:** A specific inspection running against a specific customer
+**Used for:** Tracking inspection status, querying dataprint data, evaluating metrics
+
+```
+System = "Inspector X running against Customer Y"
+```
+
+### 9. Webhooks
+
+**What:** Real-time notifications when things change
+**Think of it as:** "Call me when data lands, metrics cross thresholds, or assets change"
+**Used for:** Event-driven integrations, metric alerting, compliance monitoring
+**See also:** [Webhooks Guide](docs/WEBHOOKS_GUIDE.md) for metric thresholds and advanced patterns
 
 ```
 Webhook = "Tell me when something happens"
@@ -757,21 +768,28 @@ requests.post(
     "https://api.liongard.com/v3/webhooks/subscriptions",
     headers={"X-API-Key": api_key},
     json={
-        "url": "https://yourapp.com/webhook/liongard",
-        "events": ["dataprint.created", "dataprint.processing", "dataprint.completed"],
-        "deliveryMode": "full"
+        "name": "Dataprint tracking",
+        "endpointUrl": "https://yourapp.com/webhook/liongard",
+        "secret": "whsec_your_secret",
+        "objects": [
+            {
+                "object": "dataprints",
+                "events": ["submitted", "completed", "failed"],
+                "delivery": {"mode": "full"}
+            }
+        ]
     }
 )
 
-# Your webhook receives ALL dataprint events
+# Your webhook receives dataprint events
 @app.route("/webhook/liongard", methods=["POST"])
 def handle_webhook():
     event = request.json
-    
+
     if event["type"] == "dataprint.completed":
         dataprint = event["data"]["object"]
         print(f"Dataprint {dataprint['dataprintId']} completed")
-    
+
     return "", 200
 ```
 
@@ -1063,21 +1081,34 @@ response = requests.post(
     "https://api.liongard.com/v3/webhooks/subscriptions",
     headers={"X-API-Key": api_key},
     json={
-        "url": "https://yourapp.com/webhooks/liongard",
-        "events": [
-            "dataprint.created",
-            "dataprint.completed",
-            "alert.created",
-            "asset.created",
-            "asset.updated"
-        ],
-        "deliveryMode": "full",
-        "enabled": True
+        "name": "My integration events",
+        "endpointUrl": "https://yourapp.com/webhooks/liongard",
+        "secret": "whsec_your_signing_secret",
+        "objects": [
+            {
+                "object": "dataprints",
+                "events": ["submitted", "completed"],
+                "delivery": {"mode": "full"}
+            },
+            {
+                "object": "alerts",
+                "events": ["created"],
+                "filter": "priority=in=(high,critical)",
+                "expand": ["environment"]
+            },
+            {
+                "object": "assets",
+                "events": ["created", "updated"],
+                "delivery": {"mode": "diff"}
+            }
+        ]
     }
 )
 
 subscription_id = response.json()["subscriptionId"]
 ```
+
+For metric threshold subscriptions, see the [Webhooks Guide](docs/WEBHOOKS_GUIDE.md).
 
 ### Handle Webhook Deliveries
 
@@ -1755,13 +1786,14 @@ requests.post(
     f"{integration.base_url}/v3/webhooks/subscriptions",
     headers=integration.headers,
     json={
-        "url": "https://yourapp.com/webhook/liongard",
-        "events": [
-            "dataprint.completed",
-            "alert.created",
-            "asset.updated"
-        ],
-        "deliveryMode": "full"
+        "name": "Monitoring integration events",
+        "endpointUrl": "https://yourapp.com/webhook/liongard",
+        "secret": WEBHOOK_SECRET,
+        "objects": [
+            {"object": "dataprints", "events": ["completed"]},
+            {"object": "alerts", "events": ["created"], "filter": "priority=in=(high,critical)"},
+            {"object": "assets", "events": ["updated"], "delivery": {"mode": "diff"}}
+        ]
     }
 )
 
