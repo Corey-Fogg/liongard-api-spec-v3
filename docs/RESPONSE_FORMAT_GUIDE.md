@@ -8,7 +8,7 @@ nav_order: 3
 
 ## Overview
 
-The Liongard Vendor API v3 follows proper HTTP conventions:
+The Liongard Data API v3 follows proper HTTP conventions:
 - **Response bodies** contain only the actual data
 - **Metadata** (pagination, etc.) goes in HTTP headers
 - **No wrapper objects** - cleaner, more RESTful

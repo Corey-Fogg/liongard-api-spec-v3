@@ -26,6 +26,7 @@ Browse and test the API directly in Swagger UI.
 - **[RESPONSE_FORMAT_GUIDE.md](docs/RESPONSE_FORMAT_GUIDE.md)** - Response structure and pagination
 - **[JOBS_ASYNC_PROCESSING.md](docs/JOBS_ASYNC_PROCESSING.md)** - Async operations deep dive
 - **[METRICS_FEATURE.md](docs/METRICS_FEATURE.md)** - JMESPath-based data extraction
+- **[WEBHOOKS_GUIDE.md](docs/WEBHOOKS_GUIDE.md)** - Webhooks, metric thresholds, and event subscriptions
 
 
 ## Quick Start

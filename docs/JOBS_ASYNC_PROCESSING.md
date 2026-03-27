@@ -57,24 +57,22 @@ GET /v3/jobs/job_abc123xyz
 **Response: 200 OK (Processing)**
 ```json
 {
-  "data": {
-    "jobId": "job_abc123xyz",
-    "type": "dataprint_processing",
-    "status": "processing",
-    "progress": {
-      "current": 2,
-      "total": 5,
-      "percentage": 40,
-      "message": "Processing assets"
-    },
-    "resourceType": "dataprint",
-    "environmentId": "env_8888",
-    "inspectorId": "inspector_13",
-    "createdAt": "2024-02-06T10:30:00Z",
-    "updatedAt": "2024-02-06T10:30:05Z",
-    "startedAt": "2024-02-06T10:30:01Z",
-    "estimatedCompletionAt": "2024-02-06T10:32:00Z"
-  }
+  "jobId": "job_abc123xyz",
+  "type": "dataprint_processing",
+  "status": "processing",
+  "progress": {
+    "current": 2,
+    "total": 5,
+    "percentage": 40,
+    "message": "Processing assets"
+  },
+  "resourceType": "dataprint",
+  "environmentId": "env_8888",
+  "inspectorId": "inspector_13",
+  "createdAt": "2024-02-06T10:30:00Z",
+  "updatedAt": "2024-02-06T10:30:05Z",
+  "startedAt": "2024-02-06T10:30:01Z",
+  "estimatedCompletionAt": "2024-02-06T10:32:00Z"
 }
 ```
 
@@ -86,32 +84,30 @@ GET /v3/jobs/job_abc123xyz
 **Response: 200 OK (Completed)**
 ```json
 {
-  "data": {
-    "jobId": "job_abc123xyz",
-    "type": "dataprint_processing",
-    "status": "completed",
-    "progress": {
-      "current": 5,
-      "total": 5,
-      "percentage": 100,
-      "message": "Processing complete"
-    },
-    "result": {
-      "accepted": true,
-      "environmentsProcessed": 1,
-      "assetsProcessed": 5,
-      "warnings": [],
-      "errors": []
-    },
-    "resourceType": "dataprint",
-    "resourceId": "dataprint_xyz789",
-    "environmentId": "env_8888",
-    "inspectorId": "inspector_13",
-    "createdAt": "2024-02-06T10:30:00Z",
-    "updatedAt": "2024-02-06T10:30:15Z",
-    "startedAt": "2024-02-06T10:30:01Z",
-    "completedAt": "2024-02-06T10:30:15Z"
-  }
+  "jobId": "job_abc123xyz",
+  "type": "dataprint_processing",
+  "status": "completed",
+  "progress": {
+    "current": 5,
+    "total": 5,
+    "percentage": 100,
+    "message": "Processing complete"
+  },
+  "result": {
+    "accepted": true,
+    "environmentsProcessed": 1,
+    "assetsProcessed": 5,
+    "warnings": [],
+    "errors": []
+  },
+  "resourceType": "dataprint",
+  "resourceId": "dataprint_xyz789",
+  "environmentId": "env_8888",
+  "inspectorId": "inspector_13",
+  "createdAt": "2024-02-06T10:30:00Z",
+  "updatedAt": "2024-02-06T10:30:15Z",
+  "startedAt": "2024-02-06T10:30:01Z",
+  "completedAt": "2024-02-06T10:30:15Z"
 }
 ```
 
@@ -132,24 +128,22 @@ When the job completes, we POST to your callback URL:
 **POST https://partner.example.com/webhooks/dataprint-complete**
 ```json
 {
-  "data": {
-    "jobId": "job_abc123xyz",
-    "type": "dataprint_processing",
-    "status": "completed",
-    "result": {
-      "accepted": true,
-      "environmentsProcessed": 1,
-      "assetsProcessed": 5,
-      "warnings": [],
-      "errors": []
-    },
-    "resourceType": "dataprint",
-    "resourceId": "dataprint_xyz789",
-    "environmentId": "env_8888",
-    "inspectorId": "inspector_13",
-    "createdAt": "2024-02-06T10:30:00Z",
-    "completedAt": "2024-02-06T10:30:15Z"
-  }
+  "jobId": "job_abc123xyz",
+  "type": "dataprint_processing",
+  "status": "completed",
+  "result": {
+    "accepted": true,
+    "environmentsProcessed": 1,
+    "assetsProcessed": 5,
+    "warnings": [],
+    "errors": []
+  },
+  "resourceType": "dataprint",
+  "resourceId": "dataprint_xyz789",
+  "environmentId": "env_8888",
+  "inspectorId": "inspector_13",
+  "createdAt": "2024-02-06T10:30:00Z",
+  "completedAt": "2024-02-06T10:30:15Z"
 }
 ```
 
@@ -201,17 +195,15 @@ DELETE /v3/jobs/job_abc123xyz
 **Response: 200 OK**
 ```json
 {
-  "data": {
-    "jobId": "job_abc123xyz",
-    "type": "dataprint_processing",
-    "status": "cancelled",
-    "environmentId": "env_8888",
-    "inspectorId": "inspector_13",
-    "createdAt": "2024-02-06T10:30:00Z",
-    "updatedAt": "2024-02-06T10:30:10Z",
-    "startedAt": "2024-02-06T10:30:01Z",
-    "completedAt": "2024-02-06T10:30:10Z"
-  }
+  "jobId": "job_abc123xyz",
+  "type": "dataprint_processing",
+  "status": "cancelled",
+  "environmentId": "env_8888",
+  "inspectorId": "inspector_13",
+  "createdAt": "2024-02-06T10:30:00Z",
+  "updatedAt": "2024-02-06T10:30:10Z",
+  "startedAt": "2024-02-06T10:30:01Z",
+  "completedAt": "2024-02-06T10:30:10Z"
 }
 ```
 
@@ -245,12 +237,12 @@ def resubmit_dataprint(env_id, inspector_id, data, api_key):
         f"https://api.liongard.example.com/v3/jobs",
         headers={"X-API-Key": api_key},
         params={
-            "filter": f"environmentId=={env_id};inspectorId=={inspector_id}&status__in=pending,processing"
+            "filter": f"environmentId=={env_id};inspectorId=={inspector_id};status=in=(pending,processing)"
         }
     )
     
     # Cancel if exists
-    for job in jobs.json()["data"]:
+    for job in jobs.json():
         requests.delete(
             f"https://api.liongard.example.com/v3/jobs/{job['jobId']}",
             headers={"X-API-Key": api_key}
@@ -430,7 +422,7 @@ def can_submit_dataprint(env_id, inspector_id, api_key):
         "https://api.liongard.example.com/v3/jobs",
         headers={"X-API-Key": api_key},
         params={
-            "filter": f"environmentId=={env_id};inspectorId=={inspector_id}&status__in=pending,processing",
+            "filter": f"environmentId=={env_id};inspectorId=={inspector_id};status=in=(pending,processing)",
             "limit": 1
         }
     )
@@ -565,40 +557,39 @@ def wait_for_job(job_id, api_key, timeout=300):
 Query recent jobs for monitoring and debugging:
 
 ```bash
-GET /v3/jobs?status=failed&limit=10&sort=-createdAt
+GET /v3/jobs?filter=status==failed&limit=10&sort=-createdAt
 ```
 
-**Response:**
+**Response (array, no wrapper — pagination in headers):**
 ```json
-{
-  "data": [
-    {
-      "jobId": "job_def456",
-      "type": "dataprint_processing",
-      "status": "failed",
-      "error": {
-        "code": "VALIDATION_ERROR",
-        "message": "Invalid JSONPath in assets.uniqueIdPath"
-      },
-      "environmentId": "env_9999",
-      "createdAt": "2024-02-06T10:25:00Z",
-      "completedAt": "2024-02-06T10:25:02Z"
-    }
-  ],
-  "pagination": {
-    "limit": 10,
-    "offset": 0,
-    "count": 1,
-    "hasMore": false
+[
+  {
+    "jobId": "job_def456",
+    "type": "dataprint_processing",
+    "status": "failed",
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid JSONPath in assets.uniqueIdPath"
+    },
+    "environmentId": "env_9999",
+    "createdAt": "2024-02-06T10:25:00Z",
+    "completedAt": "2024-02-06T10:25:02Z"
   }
-}
+]
+```
+
+**Response Headers:**
+```
+X-Pagination-Limit: 10
+X-Pagination-Offset: 0
+X-Pagination-Count: 1
+X-Pagination-Has-More: false
 ```
 
 **Query Parameters:**
-- `status` - Filter by status (pending, processing, completed, failed)
 - `limit`, `offset` - Pagination
 - `sort` - Sort field (createdAt, updatedAt, completedAt)
-- `filter` - FastAPI Filter syntax
+- `filter` - RSQL filter syntax
 
 ---
 

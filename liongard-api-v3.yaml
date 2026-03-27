@@ -4000,10 +4000,20 @@ components:
             - created
             - updated
             - deleted
-          description: Events to subscribe to for this object
+            - submitted
+            - completed
+            - failed
+            - evaluated
+            - inspected
+          description: >
+            Events to subscribe to. Available events vary by object type:
+            alerts/assets/environments/identities/inspectors support created/updated/deleted;
+            dataprints support submitted/completed/failed;
+            metrics support created/updated/deleted/evaluated;
+            systems support created/updated/inspected.
         filter:
           type: string
-          description: RSQL filter expression to filter webhook events
+          description: RSQL filter expression to narrow which events are delivered
         expand:
           type: array
           items:
@@ -4064,6 +4074,11 @@ components:
           items:
             $ref: '#/components/schemas/webhookObjectSubscription'
           description: Object subscriptions
+        metricThresholds:
+          type: array
+          items:
+            $ref: '#/components/schemas/metricThreshold'
+          description: Metric threshold conditions (if any)
         createdAt:
           type: string
           format: date-time
@@ -4094,6 +4109,60 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/webhookObjectSubscription'
+        metricThresholds:
+          type: array
+          description: >
+            Threshold conditions for metric-based notifications. When a metric.evaluated
+            event fires and the value matches a condition, the webhook is delivered.
+            Requires an objects entry watching metrics with the evaluated event.
+          items:
+            $ref: '#/components/schemas/metricThreshold'
+    metricThreshold:
+      type: object
+      additionalProperties: false
+      required:
+      - metricId
+      - condition
+      - value
+      properties:
+        metricId:
+          type: string
+          description: Metric to watch
+          examples:
+          - metric_offline_count
+        condition:
+          type: string
+          enum:
+          - greater_than
+          - greater_than_or_equal
+          - less_than
+          - less_than_or_equal
+          - equal_to
+          - not_equal_to
+          - changed
+          - changed_by_more_than
+          description: >
+            Threshold condition to evaluate against the metric value.
+            "changed" fires whenever the value differs from the previous evaluation.
+            "changed_by_more_than" fires when the absolute change exceeds the threshold.
+        value:
+          description: Threshold value to compare against (type depends on metric)
+          oneOf:
+          - type: number
+          - type: string
+          - type: boolean
+          examples:
+          - 5
+          - true
+        cooldownMinutes:
+          type: integer
+          minimum: 0
+          default: 60
+          description: >
+            Minutes to suppress repeated notifications after the threshold fires.
+            Set to 0 for immediate re-notification on every evaluation.
+          examples:
+          - 60
     webhookSubscriptionPatchRequest:
       type: object
       additionalProperties: false
@@ -4115,6 +4184,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/webhookObjectSubscription'
+        metricThresholds:
+          type: array
+          items:
+            $ref: '#/components/schemas/metricThreshold'
     webhookPayload:
       type: object
       additionalProperties: false

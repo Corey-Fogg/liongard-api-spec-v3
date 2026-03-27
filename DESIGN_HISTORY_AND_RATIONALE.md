@@ -3,11 +3,11 @@ title: Design History & Rationale
 nav_order: 3
 ---
 
-# Liongard Vendor API v3 - Design History & Rationale
+# Liongard Data API v3 - Design History & Rationale
 
 ## Executive Summary
 
-The Liongard Vendor API v3 is built specifically for vendor integrations, designed around the patterns vendors actually need: async processing, webhooks, standard filtering, and clean response formats.
+The Liongard Data API v3 is built for vendor integrations and structured data access, designed around the patterns that integrations actually need: async processing, webhooks, standard filtering, and clean response formats.
 
 **Key Design Principles:**
 - Async processing (non-blocking)
@@ -710,7 +710,7 @@ PUT /v3/environments/{envId}/inspectors/{inspectorId}/config
 
 ## Conclusion
 
-Liongard Vendor API v3 represents a complete rethinking of how external integrations work. By starting from vendor use cases rather than internal data models, and by applying modern REST and async patterns, we've created an API that is:
+Liongard Data API v3 represents a complete rethinking of how external integrations work. By starting from vendor use cases rather than internal data models, and by applying modern REST and async patterns, we've created an API that is:
 
 - **Fast** - Non-blocking, async
 - **Flexible** - RSQL filtering, dynamic expansion
