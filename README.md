@@ -22,11 +22,16 @@ Browse and test the API directly in Swagger UI.
 - **[liongard-api-v3.yaml](liongard-api-v3.yaml)** - OpenAPI 3.1 specification
 
 ### Technical References
+- **[INSPECTOR_MANIFEST_GUIDE.md](docs/INSPECTOR_MANIFEST_GUIDE.md)** - Single-document JSON framework for provisioning a complete custom inspector via API
 - **[RSQL_FILTER_GUIDE.md](docs/RSQL_FILTER_GUIDE.md)** - Complete filtering syntax reference
 - **[RESPONSE_FORMAT_GUIDE.md](docs/RESPONSE_FORMAT_GUIDE.md)** - Response structure and pagination
 - **[JOBS_ASYNC_PROCESSING.md](docs/JOBS_ASYNC_PROCESSING.md)** - Async operations deep dive
 - **[METRICS_FEATURE.md](docs/METRICS_FEATURE.md)** - JMESPath-based data extraction
 - **[WEBHOOKS_GUIDE.md](docs/WEBHOOKS_GUIDE.md)** - Webhooks, metric thresholds, and event subscriptions
+
+### Schemas & Examples
+- **[inspector-manifest.schema.json](inspector-manifest.schema.json)** - Standalone JSON Schema for the inspector manifest framework
+- **[examples/senteon-manifest.json](examples/senteon-manifest.json)** - Worked example: a complete Senteon inspector authored as one manifest document
 
 
 ## Quick Start
@@ -90,7 +95,8 @@ print(f"Processing: {job_id}")
 
 ## Key Features
 
-- **RSQL filtering** - Clean, powerful query syntax across all list endpoints
+- **Inspector manifest framework** - Author an entire custom inspector (definition, auth, endpoints, discovery, views, asset mappings, metrics, rules) in one JSON document; `POST /v3/inspectors/import` runs the systematic pipeline
+- **RSQL filtering** - Clean, powerful query syntax across all list endpoints (including every new builder endpoint)
 - **Async processing** - Non-blocking dataprint operations with job tracking
 - **Metrics system** - JMESPath-based data extraction from raw dataprints
 - **Data Catalog** - Schema discovery and data dictionary for AI-accessible exploration
@@ -114,6 +120,7 @@ Webhooks ◄──────────│  Data Catalog → Schema Discovery
 
 **Core Workflow:**
 1. Create Inspector (your integration definition)
+   - Author a complete inspector with a single manifest document — see the [Inspector Manifest Guide](docs/INSPECTOR_MANIFEST_GUIDE.md) — or assemble it piece-by-piece via the `Inspector Builder` endpoints
 2. Configure per Environment (customer-specific mapping)
 3. Push Dataprints (your data — single or bulk)
 4. Track Jobs (async processing)

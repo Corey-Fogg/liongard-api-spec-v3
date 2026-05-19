@@ -1,0 +1,261 @@
+{
+  "manifestVersion": "1.0",
+  "definition": {
+    "name": "senteon-inspector",
+    "alias": "Senteon",
+    "description": "Monitors Senteon endpoint hardening compliance — managed Tenants, CIS Benchmark compliance scores per endpoint, configuration drift alarms, endpoint baselines, and tenant configuration.",
+    "category": "security",
+    "author": "Liongard",
+    "contactEmail": "support@liongard.com",
+    "helpLink": "https://docs.liongard.com",
+    "defaultFrequency": { "type": "days", "interval": 1 },
+    "constraints": {
+      "platform": ["linux", "windows"],
+      "tiers": ["core"]
+    }
+  },
+  "uiConfigTemplate": {
+    "fields": [
+      {
+        "name": "SENTEON_API_KEY_ID",
+        "label": "API Key ID",
+        "type": "string",
+        "required": true,
+        "secure": false,
+        "parent": true,
+        "help": "Command Center → Settings → API Keys → Manage API Keys → Add New API Key. The Key ID is the public identifier displayed on the key row."
+      },
+      {
+        "name": "SENTEON_API_KEY_SECRET",
+        "label": "API Key Secret",
+        "type": "secret",
+        "required": true,
+        "secure": true,
+        "parent": true,
+        "help": "Shown once when the key is created in Command Center. The key must have the 'read from all tenants' switch enabled and per-tenant permission on every tenant you want surfaced."
+      },
+      {
+        "name": "SENTEON_TENANT_ID",
+        "label": "Tenant ID",
+        "type": "string",
+        "required": false,
+        "secure": false,
+        "parent": false,
+        "help": "Auto-populated by parent discovery. The integer Tenant ID from Senteon's Command Center."
+      },
+      {
+        "name": "SENTEON_TENANT_NAME",
+        "label": "Tenant Name",
+        "type": "string",
+        "required": false,
+        "secure": false,
+        "parent": false,
+        "help": "Auto-populated by parent discovery. The Tenant name; used to filter /Alarm and /EndpointGroup/Baseline per tenant."
+      }
+    ]
+  },
+  "authentication": {
+    "type": "apiKey",
+    "baseUrl": "https://app.senteon.co/api/public/",
+    "header": "Authorization",
+    "headerFormat": "{SENTEON_API_KEY_ID}:{SENTEON_API_KEY_SECRET}",
+    "credentialFields": ["SENTEON_API_KEY_ID", "SENTEON_API_KEY_SECRET"]
+  },
+  "endpoints": [
+    {
+      "name": "Tenants",
+      "role": "discovery",
+      "method": "GET",
+      "urlTemplate": "/Tenant",
+      "extractEnabled": "SENTEON_TENANT_ID==null",
+      "rateLimit": { "minTimeMs": 1000, "maxConcurrent": 1 }
+    },
+    {
+      "name": "EndpointGroupTemplates",
+      "role": "extract",
+      "method": "GET",
+      "urlTemplate": "/EndpointGroup/Template",
+      "extractEnabled": "SENTEON_TENANT_ID==null",
+      "errorCodesToIgnore": [403, 404]
+    },
+    {
+      "name": "Tenant",
+      "role": "extract",
+      "method": "GET",
+      "urlTemplate": "/Tenant/{SENTEON_TENANT_ID}",
+      "extractEnabled": "SENTEON_TENANT_ID!=null"
+    },
+    {
+      "name": "AccountEndpoint",
+      "role": "extract",
+      "method": "GET",
+      "urlTemplate": "/AccountEndpoint",
+      "queryParams": { "tenantId": "{SENTEON_TENANT_ID}" },
+      "extractEnabled": "SENTEON_TENANT_ID!=null"
+    },
+    {
+      "name": "Compliance",
+      "role": "child",
+      "method": "GET",
+      "parentEndpoint": "AccountEndpoint",
+      "attachAs": "Compliance",
+      "urlTemplate": "/Agent/Compliance",
+      "queryParams": { "endpoint": "{parent.Id}" },
+      "errorCodesToIgnore": [403, 404]
+    },
+    {
+      "name": "Evaluation",
+      "role": "child",
+      "method": "GET",
+      "parentEndpoint": "AccountEndpoint",
+      "attachAs": "Evaluation",
+      "urlTemplate": "/Agent/Evaluation",
+      "queryParams": { "endpoint": "{parent.Id}" },
+      "errorCodesToIgnore": [403, 404]
+    },
+    {
+      "name": "Alarms",
+      "role": "extract",
+      "method": "GET",
+      "urlTemplate": "/Alarm",
+      "queryParams": { "tenant": "{SENTEON_TENANT_NAME}" },
+      "extractEnabled": "SENTEON_TENANT_ID!=null",
+      "errorCodesToIgnore": [403, 404]
+    },
+    {
+      "name": "Baselines",
+      "role": "extract",
+      "method": "GET",
+      "urlTemplate": "/EndpointGroup/Baseline",
+      "queryParams": { "tenant": "{SENTEON_TENANT_NAME}" },
+      "extractEnabled": "SENTEON_TENANT_ID!=null",
+      "errorCodesToIgnore": [403, 404]
+    }
+  ],
+  "discovery": {
+    "mode": "parentChild",
+    "discoverySourceEndpoint": "Tenants",
+    "environmentSearchPath": "Name",
+    "aliasTemplate": "Senteon - {Name}",
+    "configMapping": {
+      "SENTEON_TENANT_ID": "Id",
+      "SENTEON_TENANT_NAME": "Name"
+    }
+  },
+  "views": [
+    {
+      "title": "Overview",
+      "viewType": "child",
+      "items": [
+        {
+          "type": "keyValueTable",
+          "rows": [
+            ["Tenant Name", "{{Tenant.Name}}"],
+            ["Total Endpoints", "{{Tenant.TotalEndpointsCount}}"],
+            ["Online Endpoints", "{{Tenant.OnlineEndpointsCount}}"],
+            ["Active Endpoints", "{{Tenant.ActiveEndpointsCount}}"],
+            ["Average Compliance %", "{{avg(AccountEndpoint[*].Compliance.TargetsCompliant)}}"],
+            ["Active Alarms", "{{length(Alarms)}}"]
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Endpoints",
+      "viewType": "child",
+      "items": [
+        {
+          "type": "dataTable",
+          "columns": ["Hostname", "IPv4", "OS", "Group", "Op Status", "Health", "Last Check-in"],
+          "path": "{{AccountEndpoint[].[HostName, IPv4, OperatingSystem, GroupName, OperationalStatus, ConfigurationHealth, LastCheckinTime]}}"
+        }
+      ]
+    },
+    {
+      "title": "Alarms",
+      "viewType": "child",
+      "items": [
+        {
+          "type": "dataTable",
+          "columns": ["Type", "Category", "Subcategory", "Setting", "Endpoint", "Activation"],
+          "path": "{{Alarms[].[AlarmType, Category, Subcategory, SettingName, RelatedEndpointId, ActivationTime]}}"
+        }
+      ]
+    }
+  ],
+  "assetMappings": {
+    "assetType": "Endpoint Hardening Platform",
+    "mappings": [
+      { "label": "Tenant Name",            "query": "Tenant.Name" },
+      { "label": "Tenant ID",              "query": "Tenant.Id" },
+      { "label": "Total Endpoints",        "query": "Tenant.TotalEndpointsCount" },
+      { "label": "Online Endpoints",       "query": "Tenant.OnlineEndpointsCount" },
+      { "label": "Active Endpoints",       "query": "Tenant.ActiveEndpointsCount" },
+      { "label": "Average Compliance %",   "query": "avg(AccountEndpoint[*].Compliance.TargetsCompliant)" },
+      { "label": "Settings Managed (sum)", "query": "sum(AccountEndpoint[*].Compliance.ManagedCount)" },
+      { "label": "Active Alarms",          "query": "length(Alarms)" },
+      { "label": "Baseline Groups Assigned", "query": "length(Baselines)" }
+    ]
+  },
+  "metrics": [
+    {
+      "name": "Senteon: Total Endpoints",
+      "description": "Total endpoints under this tenant.",
+      "queries": [{ "query": "Tenant.TotalEndpointsCount", "inspectorVersionId": "latest" }],
+      "metricDisplay": true
+    },
+    {
+      "name": "Senteon: Average Compliance %",
+      "description": "Average target-compliance percentage across endpoints.",
+      "queries": [{ "query": "avg(AccountEndpoint[*].Compliance.TargetsCompliant)", "inspectorVersionId": "latest" }],
+      "metricDisplay": true,
+      "changesEnabled": true
+    },
+    {
+      "name": "Senteon: Active Alarms",
+      "description": "Count of alarms returned for this tenant.",
+      "queries": [{ "query": "length(Alarms)", "inspectorVersionId": "latest" }],
+      "metricDisplay": true,
+      "changesEnabled": true
+    },
+    {
+      "name": "Senteon: Critical Compliance Drop",
+      "description": "Endpoints with target compliance below 70%.",
+      "queries": [{ "query": "length(AccountEndpoint[?Compliance.TargetsCompliant < `70`])", "inspectorVersionId": "latest" }],
+      "metricDisplay": true
+    }
+  ],
+  "rules": [
+    {
+      "name": "Senteon | Compliance dropped",
+      "title": "Senteon | Average compliance dropped",
+      "body": "Finding: The average target-compliance percentage for this tenant has changed.\nConcern: Drift away from CIS baseline indicates new mis-configurations or recent endpoint changes.\nAction: Review the Compliance and Alarms tabs to identify the affected endpoints.",
+      "dynamicContent": "Average Compliance %: {{Senteon: Average Compliance %}}",
+      "tags": ["senteon", "compliance", "change-detection"],
+      "conditionGroups": [
+        {
+          "groupCondition": "and",
+          "priority": "medium",
+          "conditions": [
+            { "metricId": "Senteon: Average Compliance %", "operator": "changed", "value": null }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Senteon | Critical compliance drop on >=3 endpoints",
+      "title": "Senteon | Critical compliance drop on multiple endpoints",
+      "body": "Finding: Three or more endpoints have target compliance below 70%.\nConcern: Sustained drift across multiple endpoints suggests a systemic policy issue.\nAction: Inspect the Endpoints tab for the affected hosts and review their assigned baseline.",
+      "tags": ["senteon", "compliance"],
+      "conditionGroups": [
+        {
+          "groupCondition": "and",
+          "priority": "high",
+          "conditions": [
+            { "metricId": "Senteon: Critical Compliance Drop", "operator": "gte", "value": 3 }
+          ]
+        }
+      ]
+    }
+  ]
+}

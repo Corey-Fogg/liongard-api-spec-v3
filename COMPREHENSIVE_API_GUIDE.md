@@ -17,14 +17,15 @@ permalink: /COMPREHENSIVE_API_GUIDE
 4. [Core Concepts](#core-concepts)
 5. [The Data Flow](#the-data-flow)
 6. [Inspector Configuration](#inspector-configuration)
-7. [Pushing Data (Dataprints)](#pushing-data-dataprints)
-8. [Asynchronous Processing](#asynchronous-processing)
-9. [Extracting Data with Metrics](#extracting-data-with-metrics)
-10. [Real-Time Updates with Webhooks](#real-time-updates-with-webhooks)
-11. [Querying Resources](#querying-resources)
-12. [Complete Integration Example](#complete-integration-example)
-13. [Production Deployment](#production-deployment)
-14. [Troubleshooting](#troubleshooting)
+7. [Building a Custom Inspector via API](#building-a-custom-inspector-via-api)
+8. [Pushing Data (Dataprints)](#pushing-data-dataprints)
+9. [Asynchronous Processing](#asynchronous-processing)
+10. [Extracting Data with Metrics](#extracting-data-with-metrics)
+11. [Real-Time Updates with Webhooks](#real-time-updates-with-webhooks)
+12. [Querying Resources](#querying-resources)
+13. [Complete Integration Example](#complete-integration-example)
+14. [Production Deployment](#production-deployment)
+15. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -550,6 +551,87 @@ Configuration:
 3. Start pushing dataprints:
    POST /v3/environments/{envId}/inspectors/{inspectorId}/dataprints
 ```
+
+---
+
+## Building a Custom Inspector via API
+
+Everything covered above — `POST /v3/inspectors`, `PUT /v3/.../config` — defines the *minimum* to start pushing dataprints: the identity and the data mapping. A production inspector typically also needs:
+
+- a UI form for credentials (`uiConfigTemplate`)
+- a declarative authentication flow (`authentication`)
+- a catalog of HTTP endpoints the inspector calls (`endpoints`)
+- a multi-tenancy / discovery model (`discovery`)
+- UI views, asset mappings, metrics, and alert rules
+
+All of these are exposed as first-class sub-resources of an inspector under the **Inspector Builder** tag:
+
+| Sub-resource | Endpoints |
+|---|---|
+| UI config template | `GET`/`PUT /v3/inspectors/{id}/ui-config-template` |
+| Authentication | `GET`/`PUT /v3/inspectors/{id}/authentication` |
+| Endpoints (HTTP calls) | `GET`/`POST /v3/inspectors/{id}/endpoints`, single-resource `GET`/`PATCH`/`DELETE` |
+| Discovery / multi-tenancy | `GET`/`PUT /v3/inspectors/{id}/discovery` |
+| Views (UI tabs) | `GET`/`POST /v3/inspectors/{id}/views`, single-resource `GET`/`PATCH`/`DELETE` |
+| Asset mappings | `GET`/`PUT /v3/inspectors/{id}/asset-mappings` |
+| Alert rules | `GET`/`POST /v3/inspectors/{id}/rules`, single-resource `GET`/`PATCH`/`DELETE` |
+
+All list endpoints accept the standard `?filter=` parameter using **RSQL** syntax (see [RSQL Filter Guide](docs/RSQL_FILTER_GUIDE.md)).
+
+### The Manifest Framework
+
+Calling ten endpoints in order — and threading the IDs from one response into the next — is tedious to write by hand. The **manifest framework** collapses it into a single JSON document and a single API call.
+
+The manifest is a flat document with one optional section per sub-resource:
+
+```jsonc
+{
+  "manifestVersion": "1.0",
+  "definition":         { /* the InspectorCreateRequest body */ },
+  "authentication":     { /* the auth upsert body */ },
+  "uiConfigTemplate":   { "fields": [ /* … */ ] },
+  "endpoints":          [ /* one HTTP endpoint definition per entry */ ],
+  "discovery":          { /* parent/child config */ },
+  "dataprintMetadata":  { /* dataStructure + environments + assets */ },
+  "views":              [ /* one view per entry */ ],
+  "assetMappings":      { /* mappings array */ },
+  "metrics":            [ /* one metric per entry */ ],
+  "rules":              [ /* one alert rule per entry */ ]
+}
+```
+
+`POST /v3/inspectors/import` reads the document and issues the systematic sequence of API calls — exactly the same calls a human would make, in dependency order. The response includes the full `callPipeline` so the build is auditable end-to-end.
+
+The order is fixed and dependency-aware:
+
+```
+1. POST /v3/inspectors                                           ← definition
+2. PUT  /v3/inspectors/{id}/ui-config-template                   ← uiConfigTemplate
+3. PUT  /v3/inspectors/{id}/authentication                       ← authentication
+4. POST /v3/inspectors/{id}/endpoints                            ← each endpoints[]
+5. PUT  /v3/inspectors/{id}/discovery                            ← discovery
+6. PUT  /v3/environments/{envId}/inspectors/{id}/config          ← dataprintMetadata
+7. POST /v3/inspectors/{id}/views                                ← each views[]
+8. PUT  /v3/inspectors/{id}/asset-mappings                       ← assetMappings
+9. POST /v3/metrics                                              ← each metrics[]
+10. POST /v3/inspectors/{id}/rules                               ← each rules[]
+```
+
+Run it once with `dryRun: true` to preview every call:
+
+```bash
+curl -X POST https://api.liongard.com/v3/inspectors/import \
+  -H "X-API-Key: $KEY" \
+  -H "Content-Type: application/json" \
+  -d @pax8.manifest.json \
+  -d '{"dryRun": true}'
+```
+
+Drop `dryRun` and the same manifest provisions the inspector end-to-end.
+
+`GET /v3/inspectors/{id}/manifest` exports any inspector as a manifest so it round-trips back through `import` (with `upsert: true`) for migration between tenants or version control.
+
+The full schema is published as a standalone JSON Schema at `inspector-manifest.schema.json` and as `inspectorManifest` in the OpenAPI spec. See [docs/INSPECTOR_MANIFEST_GUIDE.md](docs/INSPECTOR_MANIFEST_GUIDE.md) for the complete reference, including the templating rules for `{FIELD_NAME}`, `{preflight.Endpoint}`, and `{parent.field}` placeholders.
 
 ---
 

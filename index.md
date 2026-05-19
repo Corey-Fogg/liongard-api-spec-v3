@@ -83,7 +83,8 @@ print(f"Processing: {job_id}")
 
 | Feature | Details |
 |---------|---------|
-| **RSQL filtering** | Clean, powerful query syntax across all list endpoints |
+| **Inspector manifest framework** | Author a complete custom inspector — definition, auth, endpoints, discovery, views, asset mappings, metrics, alert rules — as one JSON document. `POST /v3/inspectors/import` runs the systematic builder pipeline. See the [Inspector Manifest Guide]({% link docs/INSPECTOR_MANIFEST_GUIDE.md %}). |
+| **RSQL filtering** | Clean, powerful query syntax across all list endpoints (including every new builder endpoint) |
 | **Async processing** | Non-blocking dataprint operations with job tracking |
 | **Metrics system** | JMESPath-based data extraction from raw dataprints |
 | **Data Catalog** | Schema discovery and data dictionary for AI-accessible exploration |
