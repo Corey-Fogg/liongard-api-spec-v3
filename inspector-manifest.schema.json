@@ -1,0 +1,481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.liongard.com/schemas/inspector-manifest/v1.0",
+  "title": "Liongard Inspector Manifest",
+  "description": "Self-contained JSON description of a custom Liongard inspector. The manifest captures every payload the v3 API needs to provision the inspector end-to-end. POST it to /v3/inspectors/import to drive the builder pipeline systematically. The schemas in this file are the standalone JSON Schema form of the OpenAPI components defined in liongard-api-v3.yaml; the two stay in lockstep.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["definition"],
+  "properties": {
+    "manifestVersion": {
+      "type": "string",
+      "enum": ["1.0"],
+      "default": "1.0"
+    },
+    "definition": { "$ref": "#/$defs/InspectorDefinition" },
+    "authentication": { "$ref": "#/$defs/Authentication" },
+    "uiConfigTemplate": { "$ref": "#/$defs/UiConfigTemplate" },
+    "endpoints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/EndpointDefinition" }
+    },
+    "discovery": { "$ref": "#/$defs/DiscoveryConfig" },
+    "dataprintMetadata": { "$ref": "#/$defs/DataprintMetadata" },
+    "views": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/View" }
+    },
+    "assetMappings": { "$ref": "#/$defs/AssetMappings" },
+    "metrics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Metric" }
+    },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Rule" }
+    }
+  },
+
+  "$defs": {
+    "InspectorDefinition": {
+      "description": "Core identity and runtime defaults — POSTed to /v3/inspectors.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "maxLength": 100,
+          "description": "Kebab-case slug, globally unique (e.g. acme-monitor)."
+        },
+        "alias": { "type": "string", "description": "Human-friendly display name." },
+        "description": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["infrastructure", "security", "cloud", "networking", "appservices", "database", "identity", "backup"]
+        },
+        "author": { "type": "string" },
+        "contactEmail": { "type": "string", "format": "email" },
+        "helpLink": { "type": "string", "format": "uri" },
+        "logo": { "type": "string", "format": "uri" },
+        "icon": { "type": "string", "format": "uri" },
+        "defaultFrequency": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "enum": ["hours", "days", "weeks"] },
+            "interval": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tiers": { "type": "array", "items": { "type": "string", "enum": ["production", "staging", "development", "test", "core"] } },
+            "platform": { "type": "array", "items": { "type": "string", "enum": ["windows", "linux", "macos", "cloud"] } },
+            "frequency": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "maxIntervalType": { "type": "string", "enum": ["hours", "days"] },
+                "maxIntervalFrequency": { "type": "integer", "minimum": 1 }
+              }
+            }
+          }
+        },
+        "status": { "type": "string", "enum": ["active", "inactive", "disabled"] }
+      }
+    },
+
+    "Authentication": {
+      "description": "Declarative auth — PUT to /v3/inspectors/{id}/authentication.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["apiKey", "basic", "bearer", "oauth2ClientCredentials", "oauth2AuthorizationCode", "oauth2Password", "ssh", "custom"]
+        },
+        "baseUrl": { "type": "string", "format": "uri" },
+        "header": { "type": "string", "description": "Header that carries the credential. Defaults to Authorization." },
+        "headerFormat": {
+          "type": "string",
+          "description": "Templated header value. Use {FIELD_NAME} placeholders that match ui-config field names. Example: 'Bearer {ACCESS_TOKEN}', 'ApiKey {ACME_API_KEY}', '{KEY_ID}:{KEY_SECRET}'."
+        },
+        "tokenEndpoint": { "type": "string", "description": "Absolute or relative URL for the OAuth token endpoint." },
+        "tokenMethod": { "type": "string", "enum": ["GET", "POST"], "default": "POST" },
+        "tokenContentType": { "type": "string", "default": "application/x-www-form-urlencoded" },
+        "tokenResponsePath": { "type": "string", "default": "access_token" },
+        "tokenExpiryPath": { "type": "string", "default": "expires_in" },
+        "tokenParameters": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Body or query parameters for the token request. {FIELD_NAME} placeholders reference ui-config fields."
+        },
+        "credentialFields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names of ui-config fields consumed by this auth flow."
+        },
+        "refreshOnExpiry": { "type": "boolean", "default": true },
+        "retryOn401": { "type": "boolean", "default": true },
+        "customSnippet": { "type": "string", "description": "JavaScript snippet — used only when type=custom." }
+      }
+    },
+
+    "UiConfigTemplate": {
+      "description": "Launchpoint config form — PUT to /v3/inspectors/{id}/ui-config-template.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/UiConfigField" }
+        }
+      }
+    },
+
+    "UiConfigField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "label", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 100,
+          "description": "UPPER_SNAKE_CASE variable name surfaced to the inspector runtime."
+        },
+        "label": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "bool", "options", "secret"]
+        },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "required": { "type": "boolean", "default": false },
+        "secure": { "type": "boolean", "default": false, "description": "True for any secret value (API keys, passwords). Implies encrypted storage and masked display." },
+        "parent": { "type": "boolean", "default": false, "description": "True when the field is collected on the parent launchpoint only." },
+        "help": { "type": "string" },
+        "default": { "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }] },
+        "placeholder": { "type": "string" },
+        "validationRegex": { "type": "string" },
+        "sortOrder": { "type": "integer" }
+      }
+    },
+
+    "EndpointDefinition": {
+      "description": "One HTTP call the inspector makes — POSTed to /v3/inspectors/{id}/endpoints.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "role", "urlTemplate"],
+      "properties": {
+        "name": { "type": "string", "maxLength": 100, "description": "Logical handle (Users, DeviceIDs, Tenants). Top-level key on the dataprint and dependency handle for dependsOn." },
+        "description": { "type": "string" },
+        "role": { "type": "string", "enum": ["preflight", "extract", "discovery", "child"] },
+        "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"], "default": "GET" },
+        "urlTemplate": {
+          "type": "string",
+          "description": "URL relative to authentication.baseUrl. {FIELD} placeholders reference ui-config fields, {parent.X} placeholders reference fields on a parent endpoint row (for role=child), and {preflight.Endpoint} references preflight data."
+        },
+        "bodyTemplate": { "type": "object", "additionalProperties": true },
+        "queryParams": { "type": "object", "additionalProperties": { "type": "string" } },
+        "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+        "pagination": { "$ref": "#/$defs/PaginationStrategy" },
+        "rateLimit": { "$ref": "#/$defs/RateLimit" },
+        "valuePath": { "type": "string" },
+        "transformResponse": { "type": "string" },
+        "errorCodesToIgnore": { "type": "array", "items": { "type": "integer" } },
+        "extractEnabled": { "type": "string", "description": "Optional RSQL predicate on job.Data. Endpoint runs only when true." },
+        "dependsOn": { "type": "array", "items": { "type": "string" } },
+        "parentEndpoint": { "type": "string", "description": "Required when role=child." },
+        "attachAs": { "type": "string", "description": "For role=child: property name attached to each parent row." },
+        "retryPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxRetries": { "type": "integer", "minimum": 0 },
+            "backoffMs": { "type": "integer", "minimum": 0 },
+            "backoffStrategy": { "type": "string", "enum": ["linear", "exponential"] }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "role": { "const": "child" } }, "required": ["role"] },
+          "then": { "required": ["parentEndpoint"] }
+        }
+      ]
+    },
+
+    "PaginationStrategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["none", "offsetLimit", "pageSize", "cursor", "linkHeader", "custom"] },
+        "limitParam": { "type": "string", "default": "limit" },
+        "offsetParam": { "type": "string", "default": "offset" },
+        "pageParam": { "type": "string", "default": "page" },
+        "sizeParam": { "type": "string", "default": "size" },
+        "cursorParam": { "type": "string" },
+        "cursorResponsePath": { "type": "string" },
+        "nextUrlPath": { "type": "string" },
+        "totalPath": { "type": "string" },
+        "hasMorePath": { "type": "string" },
+        "maxPerPage": { "type": "integer", "minimum": 1, "maximum": 10000, "default": 100 },
+        "customSnippet": { "type": "string" }
+      }
+    },
+
+    "RateLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minTimeMs": { "type": "integer", "minimum": 0 },
+        "maxConcurrent": { "type": "integer", "minimum": 1, "default": 1 },
+        "retryAfterHeader": { "type": "string", "default": "Retry-After" },
+        "maxRetries": { "type": "integer", "minimum": 0, "default": 3 }
+      }
+    },
+
+    "DiscoveryConfig": {
+      "description": "Multi-tenancy — PUT to /v3/inspectors/{id}/discovery.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["singleLaunchpoint", "parentChild"] },
+        "discoverySourceEndpoint": { "type": "string", "description": "Name of an endpoint with role=discovery." },
+        "environmentSearchPath": { "type": "string" },
+        "aliasTemplate": { "type": "string" },
+        "configMapping": { "type": "object", "additionalProperties": { "type": "string" } },
+        "candidateObjectAnalysis": { "type": "string", "description": "Required when mode=singleLaunchpoint. Justifies the flat design by naming every candidate object that was considered." }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "parentChild" } }, "required": ["mode"] },
+          "then": { "required": ["discoverySourceEndpoint", "environmentSearchPath"] }
+        },
+        {
+          "if": { "properties": { "mode": { "const": "singleLaunchpoint" } }, "required": ["mode"] },
+          "then": { "required": ["candidateObjectAnalysis"] }
+        }
+      ]
+    },
+
+    "DataprintMetadata": {
+      "description": "Mapping of the dataprint into environments + assets — PUT to /v3/environments/{envId}/inspectors/{id}/config.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dataStructure", "environments", "assets"],
+      "properties": {
+        "dataStructure": { "type": "string", "enum": ["tiered", "split"] },
+        "environments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["arrayPath", "idPath", "namePath"],
+          "properties": {
+            "arrayPath": { "type": "string" },
+            "idPath": { "type": "string" },
+            "namePath": { "type": "string" }
+          }
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["arrayPath", "namePath", "typePath", "uniqueIdPath"],
+          "properties": {
+            "arrayPath": { "type": "string" },
+            "namePath": { "type": "string" },
+            "typePath": { "type": "string" },
+            "uniqueIdPath": { "type": "string" },
+            "environmentIdPath": { "type": "string", "description": "Required when dataStructure=split." }
+          }
+        },
+        "views": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "fields"],
+            "properties": {
+              "type": { "type": "string" },
+              "fields": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+
+    "View": {
+      "description": "One UI tab — POSTed to /v3/inspectors/{id}/views.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "items"],
+      "properties": {
+        "title": { "type": "string" },
+        "viewType": { "type": "string", "enum": ["parent", "child"], "default": "parent" },
+        "sortOrder": { "type": "integer" },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/ViewItem" }
+        }
+      }
+    },
+
+    "ViewItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["keyValueTable", "dataTable", "chart", "summary"] },
+        "label": { "type": "string" },
+        "rows": {
+          "type": "array",
+          "items": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2 }
+        },
+        "columns": { "type": "array", "items": { "type": "string" } },
+        "path": { "type": "string" },
+        "initialColumns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "show"],
+            "properties": {
+              "name": { "type": "string" },
+              "show": { "type": "boolean" }
+            }
+          }
+        },
+        "defaultSorted": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id"],
+            "properties": {
+              "id": { "type": "string" },
+              "desc": { "type": "boolean", "default": false }
+            }
+          }
+        },
+        "chartType": { "type": "string", "enum": ["bar", "line", "pie", "donut"] }
+      }
+    },
+
+    "AssetMappings": {
+      "description": "Asset inventory mappings — PUT to /v3/inspectors/{id}/asset-mappings.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mappings"],
+      "properties": {
+        "assetType": { "type": "string" },
+        "mappings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssetMapping" }
+        }
+      }
+    },
+
+    "AssetMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "query"],
+      "properties": {
+        "label": { "type": "string" },
+        "query": { "type": "string", "description": "JMESPath expression." },
+        "attribute": { "type": "string" }
+      }
+    },
+
+    "Metric": {
+      "description": "Custom metric — POSTed to /v3/metrics.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "queries"],
+      "properties": {
+        "name": { "type": "string", "maxLength": 255 },
+        "description": { "type": "string" },
+        "environmentId": { "type": "string" },
+        "queries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["query", "inspectorVersionId"],
+            "properties": {
+              "query": { "type": "string", "description": "JMESPath expression." },
+              "inspectorVersionId": { "type": "string" }
+            }
+          }
+        },
+        "metricDisplay": { "type": "boolean", "default": true },
+        "changesEnabled": { "type": "boolean", "default": false }
+      }
+    },
+
+    "Rule": {
+      "description": "Alert rule — POSTed to /v3/inspectors/{id}/rules.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "conditionGroups"],
+      "properties": {
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "enabled": { "type": "boolean", "default": true },
+        "visible": { "type": "boolean", "default": true },
+        "body": { "type": "string", "description": "Finding / Concern / Action narrative." },
+        "dynamicContent": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "conditionGroups": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/RuleConditionGroup" }
+        }
+      }
+    },
+
+    "RuleConditionGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["groupCondition", "priority", "conditions"],
+      "properties": {
+        "groupCondition": { "type": "string", "enum": ["and", "or"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/RuleCondition" }
+        }
+      }
+    },
+
+    "RuleCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metricId", "operator"],
+      "properties": {
+        "metricId": { "type": "string", "description": "ID or UUID of a metric on the same inspector." },
+        "operator": {
+          "type": "string",
+          "enum": ["eq", "neq", "gt", "gte", "lt", "lte", "has", "empty", "nempty", "contains", "ncontains", "changed"]
+        },
+        "value": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" },
+            { "type": "boolean" },
+            { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }] } },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

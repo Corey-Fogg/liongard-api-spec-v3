@@ -4,198 +4,96 @@ nav_exclude: true
 
 # Liongard Data API v3
 
-The structured datalake API for IT infrastructure intelligence. Liongard captures, normalizes, and structures operational data from across your IT environment. This API enables vendors and integrations to **push data in**, **pull insights out**, and **react to changes** in real time.
+OpenAPI 3.1 specification for the Liongard Data API v3 — a structured datalake API that lets vendors **push data in**, **pull insights out**, and **react to changes** in real time.
 
-Every piece of data is tagged with rich metadata — environment context, inspector lineage, asset classification, and schema mappings — so it can be discovered, queried, and consumed by both humans and AI systems.
+> The user-facing documentation lives at the published [GitHub Pages site](https://corey-fogg.github.io/liongard-api-spec-v3/). This README is the GitHub-only repo guide.
 
-## Documentation
+---
 
-**[Interactive API Explorer](swagger-ui)**
-
-Browse and test the API directly in Swagger UI.
-
-## Documentation Files
-
-### Core Documentation
-- **[COMPREHENSIVE_API_GUIDE.md](COMPREHENSIVE_API_GUIDE.md)** - Complete vendor integration guide
-- **[DESIGN_HISTORY_AND_RATIONALE.md](DESIGN_HISTORY_AND_RATIONALE.md)** - Why v3 exists and how we got here
-- **[liongard-api-v3.yaml](liongard-api-v3.yaml)** - OpenAPI 3.1 specification
-
-### Technical References
-- **[RSQL_FILTER_GUIDE.md](docs/RSQL_FILTER_GUIDE.md)** - Complete filtering syntax reference
-- **[RESPONSE_FORMAT_GUIDE.md](docs/RESPONSE_FORMAT_GUIDE.md)** - Response structure and pagination
-- **[JOBS_ASYNC_PROCESSING.md](docs/JOBS_ASYNC_PROCESSING.md)** - Async operations deep dive
-- **[METRICS_FEATURE.md](docs/METRICS_FEATURE.md)** - JMESPath-based data extraction
-- **[WEBHOOKS_GUIDE.md](docs/WEBHOOKS_GUIDE.md)** - Webhooks, metric thresholds, and event subscriptions
-
-
-## Quick Start
-
-```python
-import requests
-
-# 1. Create inspector
-response = requests.post(
-    "https://api.liongard.com/v3/inspectors",
-    headers={"X-API-Key": "your-api-key"},
-    json={
-        "name": "my-integration",
-        "displayName": "My Integration",
-        "category": "monitoring"
-    }
-)
-inspector_id = response.json()["inspectorId"]
-
-# 2. Configure for environment
-requests.put(
-    f"https://api.liongard.com/v3/environments/env_123/inspectors/{inspector_id}/config",
-    headers={"X-API-Key": "your-api-key"},
-    json={
-        "metadata": {
-            "dataStructure": "split",
-            "environments": {
-                "arrayPath": "$.clients",
-                "idPath": "$.id",
-                "namePath": "$.name"
-            },
-            "assets": {
-                "arrayPath": "$.devices",
-                "namePath": "$.hostname",
-                "typePath": "$.type",
-                "uniqueIdPath": "$.serial",
-                "environmentIdPath": "$.client_id"
-            }
-        }
-    }
-)
-
-# 3. Push data
-response = requests.post(
-    f"https://api.liongard.com/v3/environments/env_123/inspectors/{inspector_id}/dataprints",
-    headers={"X-API-Key": "your-api-key"},
-    json={
-        "clients": [{"id": "c1", "name": "Acme Corp"}],
-        "devices": [{
-            "client_id": "c1",
-            "hostname": "srv-01",
-            "type": "server",
-            "serial": "SN001"
-        }]
-    }
-)
-
-job_id = response.json()["jobId"]
-print(f"Processing: {job_id}")
-```
-
-## Key Features
-
-- **RSQL filtering** - Clean, powerful query syntax across all list endpoints
-- **Async processing** - Non-blocking dataprint operations with job tracking
-- **Metrics system** - JMESPath-based data extraction from raw dataprints
-- **Data Catalog** - Schema discovery and data dictionary for AI-accessible exploration
-- **Systems** - First-class resource linking inspectors to environments
-- **Bulk operations** - Push dataprints and evaluate metrics at scale
-- **Webhooks** - Real-time event notifications for all resource types
-- **OpenAPI 3.1** - Standards-compliant specification
-- **No wrappers** - Direct arrays/objects in responses
-- **Header pagination** - RFC 5988 Link header
-
-## Architecture
+## Repo Layout
 
 ```
-                    ┌─────────────────────────────────────────┐
-                    │          Liongard Datalake               │
-Your Product ──────►│  Dataprints → Assets → Metrics          │──────► Your Dashboard
-                    │  Environments → Systems → Identities    │──────► AI Agents
-Webhooks ◄──────────│  Data Catalog → Schema Discovery        │──────► Reports
-                    └─────────────────────────────────────────┘
+liongard-api-spec-v3/
+├── liongard-api-v3.yaml          ← OpenAPI 3.1 specification (source of truth)
+├── inspector-manifest.schema.json← JSON Schema for the inspector creation framework
+├── COMPREHENSIVE_API_GUIDE.md    ← Vendor integration walkthrough
+├── DESIGN_HISTORY_AND_RATIONALE.md
+├── index.md                      ← Landing page for the docs site (Jekyll/just-the-docs)
+├── swagger-ui.html               ← Interactive API explorer
+├── _config.yml                   ← Jekyll config
+├── .clinerules                   ← Editing rules for Claude Code agents
+├── docs/                         ← Long-form references
+│   ├── INSPECTOR_MANIFEST_GUIDE.md  ← Manifest framework: single doc, one API call, full inspector
+│   ├── RSQL_FILTER_GUIDE.md
+│   ├── RESPONSE_FORMAT_GUIDE.md
+│   ├── JOBS_ASYNC_PROCESSING.md
+│   ├── METRICS_FEATURE.md
+│   ├── WEBHOOKS_GUIDE.md
+│   └── technical-references.md
+└── examples/                     ← Reference payloads
+    └── senteon-manifest.json     ← Complete Senteon inspector as one manifest
 ```
 
-**Core Workflow:**
-1. Create Inspector (your integration definition)
-2. Configure per Environment (customer-specific mapping)
-3. Push Dataprints (your data — single or bulk)
-4. Track Jobs (async processing)
-5. Extract Metrics (insights and aggregations)
-6. Explore Data Catalog (discover schemas for AI consumption)
-7. Receive Webhooks (real-time updates)
+`README.md`, `.clinerules`, `examples/`, and `liongard-api-v3.yaml` are excluded from the published docs site by `_config.yml`.
 
-## Development
+---
 
-### Validate Spec
+## Editing the Spec
+
+Conventions are formalised in `.clinerules`. Highlights:
+
+1. OpenAPI 3.1.0 compliance
+2. **No response wrappers** — list endpoints return arrays, single endpoints return objects, pagination lives in headers
+3. **RSQL** for the `?filter=` parameter on every list endpoint (never `field__op=value`)
+4. camelCase fields, ISO-8601 timestamps
+5. Async (202 + job id) for any operation that can exceed 5 s
+6. Use the terms **inspector**, **environment**, **dataprint**, **system**, **launchpoint** consistently
+
+### Inspector Builder
+
+Sub-resource endpoints under `/v3/inspectors/{inspectorId}/...` define the full inspector model: `ui-config-template`, `authentication`, `endpoints`, `discovery`, `views`, `asset-mappings`, `rules`. They can be authored piecewise or driven in one shot by posting an `inspectorManifest` to `POST /v3/inspectors/import`. See `docs/INSPECTOR_MANIFEST_GUIDE.md`.
+
+The manifest standardises the **inputs needed to create an inspector** (auth, endpoints, mappings, views, rules). The dataprint payload an inspector emits is intentionally not standardised — each inspector chooses its own shape and the per-environment `dataprintConfig` (`PUT /v3/environments/{envId}/inspectors/{id}/config`) is how Liongard learns to parse it into environments and assets.
+
+---
+
+## Validate & Preview Locally
 
 ```bash
 # YAML syntax
 python3 -c "import yaml; yaml.safe_load(open('liongard-api-v3.yaml'))"
 
-# OpenAPI validation
+# OpenAPI 3.1 validation
 npx @apidevtools/swagger-cli validate liongard-api-v3.yaml
-```
 
-### View Locally
+# Validate the manifest schema against the bundled example
+python3 -c "import json, jsonschema; jsonschema.validate(json.load(open('examples/senteon-manifest.json')), json.load(open('inspector-manifest.schema.json')))"
 
-```bash
-# Swagger UI
-docker run -p 8080:8080 -e SWAGGER_JSON=/spec/liongard-api-v3.yaml \
+# Browse the spec in Swagger UI
+docker run -p 8080:8080 \
+  -e SWAGGER_JSON=/spec/liongard-api-v3.yaml \
   -v $(pwd):/spec swaggerapi/swagger-ui
 
-# Redoc
-npx @redocly/cli preview-docs liongard-api-v3.yaml
+# Preview the docs site (Jekyll)
+bundle exec jekyll serve
 ```
-
-## Contributing
-
-When making changes:
-
-1. Maintain OpenAPI 3.1.0 compliance
-2. Keep response format consistent (no wrappers)
-3. Use RSQL for filtering (not double underscores)
-4. Add pagination headers to list endpoints
-5. Update documentation
-6. Validate before committing
-
-See [.clinerules](.clinerules) for detailed guidelines for Claude Code.
-
-## Design Philosophy
-
-Read [DESIGN_HISTORY_AND_RATIONALE.md](DESIGN_HISTORY_AND_RATIONALE.md) to understand the design decisions behind the API.
-
-## Use Cases
-
-**MSP Tool Integration:**
-```
-Your MSP Platform → Push client data → Liongard → Extract metrics → Display in dashboard
-```
-
-**Security Tool Integration:**
-```
-Your Security Tool → Push vulnerability data → Liongard → Get alerts → Trigger remediation
-```
-
-**Monitoring Integration:**
-```
-Your Monitoring Tool → Push device data → Liongard → Track changes → Create tickets
-```
-
-## Links
-
-- **Interactive Docs**: [Swagger UI](swagger-ui)
-- **OpenAPI 3.1 Spec**: https://spec.openapis.org/oas/v3.1.0
-- **RSQL Spec**: https://github.com/jirutka/rsql-parser
-- **RFC 5988 (Link Header)**: https://tools.ietf.org/html/rfc5988
-
-## License
-
-[Your License Here]
-
-## Support
-
-For questions or issues:
-1. Check the [Comprehensive API Guide](COMPREHENSIVE_API_GUIDE.md)
-2. Browse existing issues
-3. Create a new issue with details
 
 ---
 
-**Built for vendors. Structured for AI. Designed for scale.**
+## Contributing
+
+1. Edit `liongard-api-v3.yaml` and any affected `.md` files in the same PR.
+2. Run the validations above.
+3. Keep the doc cross-references in sync — `COMPREHENSIVE_API_GUIDE.md`, the relevant `docs/*` file, and the spec should agree on field names and example payloads.
+4. New endpoints belong to an existing tag when possible; add a new tag only when the surface is genuinely new (e.g. `Inspector Builder`).
+
+For broader design context, read `DESIGN_HISTORY_AND_RATIONALE.md`.
+
+---
+
+## Links
+
+- **Interactive docs:** [Swagger UI](swagger-ui)
+- **OpenAPI 3.1:** https://spec.openapis.org/oas/v3.1.0
+- **RSQL:** https://github.com/jirutka/rsql-parser
+- **RFC 5988 (Link header):** https://tools.ietf.org/html/rfc5988

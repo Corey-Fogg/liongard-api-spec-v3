@@ -450,7 +450,7 @@ GET /v3/meta/assets/types     # What asset types exist?
 POST /v3/inspectors
 {
   "name": "acme-monitor",
-  "displayName": "Acme Monitoring"
+  "alias": "Acme Monitoring"
 }
 ```
 

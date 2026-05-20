@@ -71,6 +71,14 @@ tags:
   description: >
     User and identity records discovered across inspected systems (Active Directory users,
     M365 accounts, etc.). Read-only — populated automatically via inspector data mappings.
+- name: Inspector Builder
+  description: >
+    Endpoints for defining a custom inspector end-to-end via the API — UI config fields,
+    authentication, HTTP endpoint catalog, pagination strategies, discovery/multi-tenancy,
+    UI views, asset mappings, and alert rules. Together these sub-resources describe a
+    complete custom inspector that can be deployed to environments. Use the manifest
+    endpoints to provision an entire inspector in a single call from a JSON document
+    that lists every payload the builder pipeline will send.
 - name: Inspectors
   description: >
     Data collection definitions that describe what data to capture and how to map it.
@@ -604,6 +612,852 @@ paths:
           $ref: '#/components/responses/unauthorized'
         '404':
           $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/ui-config-template:
+    get:
+      tags:
+      - Inspector Builder
+      summary: Get the UI config template for an inspector
+      description: 'Returns the credential / configuration fields a user fills in
+        when creating a launchpoint for this inspector. Secure field values are
+        never returned by this endpoint; they are only consumed at runtime.
+
+        '
+      operationId: getInspectorUiConfigTemplate
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorUiConfigTemplate'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    put:
+      tags:
+      - Inspector Builder
+      summary: Replace the UI config template
+      description: 'Replaces the entire field list. Use PATCH-style semantics by
+        reading first and posting the merged result.
+
+        '
+      operationId: upsertInspectorUiConfigTemplate
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorUiConfigTemplateUpsertRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorUiConfigTemplate'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/authentication:
+    get:
+      tags:
+      - Inspector Builder
+      summary: Get authentication configuration
+      description: 'Returns the declarative auth configuration that the runtime
+        uses to build the auth client. Secret values referenced by
+        `headerFormat`/`tokenParameters` are not returned — only field names.
+
+        '
+      operationId: getInspectorAuthentication
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorAuthentication'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    put:
+      tags:
+      - Inspector Builder
+      summary: Upsert authentication configuration
+      operationId: upsertInspectorAuthentication
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorAuthenticationUpsertRequest'
+            examples:
+              oauth2ClientCredentials:
+                summary: Pax8-style OAuth2 client credentials
+                value:
+                  type: oauth2ClientCredentials
+                  baseUrl: https://api.pax8.com
+                  tokenEndpoint: /v1/oauth/token
+                  tokenContentType: application/x-www-form-urlencoded
+                  tokenResponsePath: access_token
+                  tokenExpiryPath: expires_in
+                  tokenParameters:
+                    grant_type: client_credentials
+                    client_id: '{PAX8_CLIENT_ID}'
+                    client_secret: '{PAX8_CLIENT_SECRET}'
+                  credentialFields:
+                  - PAX8_CLIENT_ID
+                  - PAX8_CLIENT_SECRET
+                  headerFormat: Bearer {ACCESS_TOKEN}
+              apiKeyRaw:
+                summary: Senteon-style raw API key header
+                value:
+                  type: apiKey
+                  baseUrl: https://app.senteon.co/api/public/
+                  header: Authorization
+                  headerFormat: '{SENTEON_API_KEY_ID}:{SENTEON_API_KEY_SECRET}'
+                  credentialFields:
+                  - SENTEON_API_KEY_ID
+                  - SENTEON_API_KEY_SECRET
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorAuthentication'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/endpoints:
+    get:
+      tags:
+      - Inspector Builder
+      summary: List endpoint definitions for an inspector
+      description: 'Returns the catalog of HTTP calls the inspector makes —
+        preflight, extract, discovery, and child fan-out endpoints. Supports
+        RSQL filtering on `name`, `role`, `method`, `urlTemplate`, and
+        `updatedAt`.
+
+        '
+      operationId: listInspectorEndpoints
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/filter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/inspectorEndpointDefinition'
+          headers:
+            X-Pagination-Limit: *id001
+            X-Pagination-Offset: *id002
+            X-Pagination-Count: *id003
+            X-Pagination-Has-More: *id004
+            Link: *id005
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    post:
+      tags:
+      - Inspector Builder
+      summary: Define a new endpoint for the inspector
+      operationId: createInspectorEndpoint
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorEndpointDefinitionCreateRequest'
+            examples:
+              preflightUserIds:
+                summary: Preflight that fetches user IDs
+                value:
+                  name: UserIDs
+                  role: preflight
+                  method: GET
+                  urlTemplate: /user-management/queries/users/v1
+                  valuePath: resources
+                  pagination:
+                    type: offsetLimit
+                    maxPerPage: 50
+                  errorCodesToIgnore:
+                  - 400
+                  - 403
+              extractUsersPost:
+                summary: POST endpoint that consumes preflight data
+                value:
+                  name: Users
+                  role: extract
+                  method: POST
+                  urlTemplate: /user-management/entities/users/GET/v1
+                  bodyTemplate:
+                    ids: '{preflight.UserIDs}'
+                  valuePath: resources
+                  dependsOn:
+                  - UserIDs
+                  errorCodesToIgnore:
+                  - 400
+                  - 403
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorEndpointDefinition'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/endpoints/{endpointDefId}:
+    get:
+      tags:
+      - Inspector Builder
+      summary: Get a single endpoint definition
+      operationId: getInspectorEndpoint
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/endpointDefId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorEndpointDefinition'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    patch:
+      tags:
+      - Inspector Builder
+      summary: Update an endpoint definition
+      operationId: updateInspectorEndpoint
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/endpointDefId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorEndpointDefinitionPatchRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorEndpointDefinition'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    delete:
+      tags:
+      - Inspector Builder
+      summary: Delete an endpoint definition
+      operationId: deleteInspectorEndpoint
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/endpointDefId'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/discovery:
+    get:
+      tags:
+      - Inspector Builder
+      summary: Get discovery / multi-tenancy configuration
+      operationId: getInspectorDiscovery
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorDiscoveryConfig'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    put:
+      tags:
+      - Inspector Builder
+      summary: Upsert discovery / multi-tenancy configuration
+      description: 'When `mode=parentChild`, the named discovery endpoint
+        emits the Discovered[] list. When `mode=singleLaunchpoint`,
+        `candidateObjectAnalysis` is required to justify the flat design.
+
+        '
+      operationId: upsertInspectorDiscovery
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorDiscoveryConfigUpsertRequest'
+            examples:
+              parentChildPax8:
+                summary: Pax8-style per-customer discovery
+                value:
+                  mode: parentChild
+                  discoverySourceEndpoint: Companies
+                  environmentSearchPath: name
+                  aliasTemplate: Pax8 - {name}
+                  configMapping:
+                    PAX8_COMPANY_ID: id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorDiscoveryConfig'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/views:
+    get:
+      tags:
+      - Inspector Builder
+      summary: List UI views for an inspector
+      description: 'Supports RSQL filtering on `title`, `viewType`, `sortOrder`,
+        and `updatedAt`.
+
+        '
+      operationId: listInspectorViews
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/filter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/inspectorView'
+          headers:
+            X-Pagination-Limit: *id001
+            X-Pagination-Offset: *id002
+            X-Pagination-Count: *id003
+            X-Pagination-Has-More: *id004
+            Link: *id005
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    post:
+      tags:
+      - Inspector Builder
+      summary: Create a new UI view (tab)
+      operationId: createInspectorView
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorViewCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorView'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/views/{viewId}:
+    get:
+      tags:
+      - Inspector Builder
+      summary: Get a single view
+      operationId: getInspectorView
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/viewId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorView'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    patch:
+      tags:
+      - Inspector Builder
+      summary: Update a view
+      operationId: updateInspectorView
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/viewId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorViewPatchRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorView'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    delete:
+      tags:
+      - Inspector Builder
+      summary: Delete a view
+      operationId: deleteInspectorView
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/viewId'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/asset-mappings:
+    get:
+      tags:
+      - Inspector Builder
+      summary: Get asset inventory mappings
+      operationId: getInspectorAssetMappings
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorAssetMappings'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    put:
+      tags:
+      - Inspector Builder
+      summary: Upsert asset inventory mappings
+      operationId: upsertInspectorAssetMappings
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorAssetMappingsUpsertRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorAssetMappings'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/rules:
+    get:
+      tags:
+      - Inspector Builder
+      summary: List alert rules for an inspector
+      description: 'Supports RSQL filtering on `name`, `enabled`, `visible`,
+        `tags`, and `updatedAt`.
+
+        '
+      operationId: listInspectorRules
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+      - $ref: '#/components/parameters/sort'
+      - $ref: '#/components/parameters/filter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/inspectorRule'
+          headers:
+            X-Pagination-Limit: *id001
+            X-Pagination-Offset: *id002
+            X-Pagination-Count: *id003
+            X-Pagination-Has-More: *id004
+            Link: *id005
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    post:
+      tags:
+      - Inspector Builder
+      summary: Create an alert rule
+      operationId: createInspectorRule
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorRuleCreateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorRule'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/rules/{ruleId}:
+    get:
+      tags:
+      - Inspector Builder
+      summary: Get a single alert rule
+      operationId: getInspectorRule
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/ruleId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorRule'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    patch:
+      tags:
+      - Inspector Builder
+      summary: Update an alert rule
+      operationId: updateInspectorRule
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/ruleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorRulePatchRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorRule'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    delete:
+      tags:
+      - Inspector Builder
+      summary: Delete an alert rule
+      operationId: deleteInspectorRule
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - $ref: '#/components/parameters/ruleId'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/{inspectorId}/manifest:
+    get:
+      tags:
+      - Inspector Builder
+      summary: Export an inspector as a single manifest document
+      description: 'Returns a single JSON document with every sub-resource of
+        the inspector — definition, authentication, ui-config-template,
+        endpoints, discovery, dataprintMetadata, views, asset-mappings,
+        metrics, and rules. The output is round-trippable: it can be POSTed to
+        `/v3/inspectors/import` (with `upsert=true`) to reconstruct the
+        inspector exactly. Secure ui-config field values are never included.
+
+        '
+      operationId: exportInspectorManifest
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      - name: environmentId
+        in: query
+        required: false
+        schema:
+          type: string
+        description: 'When supplied, the environment-scoped dataprint config is
+          included in the manifest under `dataprintMetadata`.
+
+          '
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorManifest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+    put:
+      tags:
+      - Inspector Builder
+      summary: Replace an inspector entirely from a manifest
+      description: 'Atomic replacement of an existing inspector''s sub-resources
+        from a manifest. Equivalent to POST `/v3/inspectors/import` with
+        `upsert=true` and a matching `definition.name`, but bound to the
+        inspectorId in the path.
+
+        '
+      operationId: replaceInspectorFromManifest
+      parameters:
+      - $ref: '#/components/parameters/inspectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorManifestImportRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorManifestImportResponse'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
+        '429':
+          $ref: '#/components/responses/rateLimited'
+  /v3/inspectors/import:
+    post:
+      tags:
+      - Inspector Builder
+      summary: Provision a complete inspector from a manifest
+      description: 'Reads a single JSON manifest and issues the systematic
+        sequence of API calls required to provision the inspector and all of
+        its sub-resources. The response includes the full `callPipeline` —
+        every operationId, method, path, and payload that was executed (or
+        would have been executed in `dryRun` mode).
+
+
+        **Pipeline order (sections present in the manifest run; sections absent
+        are skipped):**
+
+
+        1. `POST /v3/inspectors` (or `PATCH /v3/inspectors/{id}` when `upsert`
+        matches an existing name)
+
+        2. `PUT /v3/inspectors/{id}/ui-config-template`
+
+        3. `PUT /v3/inspectors/{id}/authentication`
+
+        4. `POST /v3/inspectors/{id}/endpoints` per endpoint
+
+        5. `PUT /v3/inspectors/{id}/discovery`
+
+        6. `PUT /v3/environments/{environmentId}/inspectors/{id}/config`
+        (when `dataprintMetadata` + `environmentId` are present)
+
+        7. `POST /v3/inspectors/{id}/views` per view
+
+        8. `PUT /v3/inspectors/{id}/asset-mappings`
+
+        9. `POST /v3/metrics` per metric
+
+        10. `POST /v3/inspectors/{id}/rules` per rule
+
+
+        Use `dryRun=true` to preview the pipeline without mutating state.
+
+        '
+      operationId: importInspectorManifest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/inspectorManifestImportRequest'
+      responses:
+        '201':
+          description: Created - manifest applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorManifestImportResponse'
+        '200':
+          description: OK - dryRun preview or partial import (when `stopOnError`
+            is false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inspectorManifestImportResponse'
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '409':
+          description: Conflict - an inspector with the same name already exists
+            and `upsert=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorResponse'
+        '422':
+          $ref: '#/components/responses/unprocessableEntity'
         '429':
           $ref: '#/components/responses/rateLimited'
   /v3/environments/{environmentId}/inspectors:
@@ -1918,6 +2772,34 @@ components:
         type: string
       description: 'Unique inspector identifier. This ID is global and consistent
         across environments.
+
+        '
+    endpointDefId:
+      name: endpointDefId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 'Unique identifier for a single HTTP endpoint definition attached
+        to an inspector. Assigned on POST and stable thereafter.
+
+        '
+    viewId:
+      name: viewId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 'Unique identifier for a single UI view (tab) attached to an inspector.
+
+        '
+    ruleId:
+      name: ruleId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 'Unique identifier for a single alert rule attached to an inspector.
 
         '
     jobId:
@@ -5082,3 +5964,1376 @@ components:
           type: string
           format: uri
           description: HTTPS URL to receive results when evaluation completes
+    inspectorUiConfigField:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - label
+      - type
+      description: A single credential/config field shown to users when they create
+        a launchpoint for this inspector.
+      properties:
+        name:
+          type: string
+          description: 'Variable name surfaced on the runtime job (UPPER_SNAKE_CASE
+            recommended, e.g. ACME_API_KEY). Must be unique within the inspector.
+
+            '
+          pattern: '^[A-Z][A-Z0-9_]*$'
+          maxLength: 100
+          examples:
+          - ACME_API_KEY
+        label:
+          type: string
+          description: Human-readable label rendered in the launchpoint form.
+          examples:
+          - API Key
+        type:
+          type: string
+          enum:
+          - string
+          - number
+          - bool
+          - options
+          - secret
+          description: Input control type. `secret` is identical to `string` but
+            stored encrypted and masked in the UI.
+        options:
+          type: array
+          description: Allowed values when `type` is `options`.
+          items:
+            type: string
+        required:
+          type: boolean
+          default: false
+          description: Whether the user must populate this field before the launchpoint
+            can be saved.
+        secure:
+          type: boolean
+          default: false
+          description: 'When true, the value is stored encrypted, never returned
+            on GET, and masked in logs. Required for API keys, passwords, and
+            shared secrets. Mutually compatible with any `type`.
+
+            '
+        parent:
+          type: boolean
+          default: false
+          description: 'When true the field is collected on the parent launchpoint
+            only and copied into discovered child launchpoints. Use for credentials
+            that are shared across an MSP''s entire customer base (the MSP API key
+            or OAuth client) rather than per-customer values (a customer-specific
+            tenant id).
+
+            '
+        help:
+          type: string
+          description: 'Inline help text — typically a short pointer to where the
+            value lives in the vendor''s UI (e.g. "Command Center → Settings → API
+            Keys").
+
+            '
+        default:
+          oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+          description: Optional default value pre-filled in the launchpoint form.
+        placeholder:
+          type: string
+          description: Optional placeholder text for the input.
+        validationRegex:
+          type: string
+          description: Optional ECMAScript regex evaluated client-side before save.
+        sortOrder:
+          type: integer
+          description: Render order in the form; lower numbers appear first.
+    inspectorUiConfigTemplate:
+      type: object
+      additionalProperties: false
+      required:
+      - inspectorId
+      - fields
+      - updatedAt
+      properties:
+        inspectorId:
+          type: string
+          examples:
+          - inspector_13
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/inspectorUiConfigField'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          description: Optimistic locking version (auto-incremented on PUT).
+    inspectorUiConfigTemplateUpsertRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - fields
+      properties:
+        fields:
+          type: array
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/inspectorUiConfigField'
+    inspectorAuthentication:
+      type: object
+      additionalProperties: false
+      required:
+      - inspectorId
+      - type
+      - updatedAt
+      description: 'Declarative description of how the inspector authenticates
+        against the vendor API. The runtime auth client is built from this
+        definition — no inspector code needs to be written for the supported
+        flows.
+
+        '
+      properties:
+        inspectorId:
+          type: string
+          examples:
+          - inspector_13
+        type:
+          type: string
+          enum:
+          - apiKey
+          - basic
+          - bearer
+          - oauth2ClientCredentials
+          - oauth2AuthorizationCode
+          - oauth2Password
+          - ssh
+          - custom
+          description: 'Auth flow:
+
+            - `apiKey` — single header with templated value
+
+            - `basic` — HTTP Basic with user/pass from UI fields
+
+            - `bearer` — static bearer token from a UI field
+
+            - `oauth2ClientCredentials` — server-to-server OAuth flow
+
+            - `oauth2AuthorizationCode` — user-redirect OAuth flow
+
+            - `oauth2Password` — legacy resource-owner password OAuth flow
+
+            - `ssh` — SSH key + host/port
+
+            - `custom` — caller supplies a JS-style snippet (advanced)
+
+            '
+        baseUrl:
+          type: string
+          format: uri
+          description: Base URL of the vendor API. May be overridden per-launchpoint
+            via a `*_BASE_URL` ui-config field.
+        header:
+          type: string
+          description: HTTP header that carries the credential. Defaults to
+            `Authorization` for bearer/basic and the value of `header` for apiKey.
+        headerFormat:
+          type: string
+          description: 'Templated header value with `{fieldName}` placeholders that
+            reference ui-config fields. Examples:
+
+            - `Bearer {ACCESS_TOKEN}`
+
+            - `ApiKey {ACME_API_KEY}`
+
+            - `{SENTEON_API_KEY_ID}:{SENTEON_API_KEY_SECRET}`
+
+            '
+          examples:
+          - Bearer {ACCESS_TOKEN}
+        tokenEndpoint:
+          type: string
+          description: Absolute or relative URL for the token endpoint (OAuth flows).
+          examples:
+          - /oauth/token
+        tokenMethod:
+          type: string
+          enum:
+          - GET
+          - POST
+          default: POST
+        tokenContentType:
+          type: string
+          default: application/x-www-form-urlencoded
+        tokenResponsePath:
+          type: string
+          default: access_token
+          description: Path within the token endpoint response to extract the
+            access token (e.g. `access_token`, `data.token`).
+        tokenExpiryPath:
+          type: string
+          default: expires_in
+          description: Path within the token endpoint response to extract the
+            expiry (in seconds). When absent, the inspector refreshes on the next
+            401.
+        tokenParameters:
+          type: object
+          additionalProperties:
+            type: string
+          description: 'Static body/query parameters for the token request. Use
+            `{fieldName}` placeholders to substitute ui-config values.
+
+            '
+          examples:
+          - client_id: '{ACME_CLIENT_ID}'
+            client_secret: '{ACME_CLIENT_SECRET}'
+            grant_type: client_credentials
+        credentialFields:
+          type: array
+          items:
+            type: string
+          description: Names of ui-config fields used by this auth flow. Used by
+            the builder to validate that the ui-config template provides every
+            value referenced in `headerFormat` / `tokenParameters`.
+          examples:
+          - - ACME_CLIENT_ID
+            - ACME_CLIENT_SECRET
+        refreshOnExpiry:
+          type: boolean
+          default: true
+        retryOn401:
+          type: boolean
+          default: true
+          description: Whether to refresh the token and retry once when a 401 is
+            received.
+        customSnippet:
+          type: string
+          description: 'JavaScript-style snippet used only when `type=custom`. The
+            snippet receives `{ job, request }` and must mutate `request.headers`.
+            Reviewed before publish.
+
+            '
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+    inspectorAuthenticationUpsertRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      properties:
+        type:
+          type: string
+          enum:
+          - apiKey
+          - basic
+          - bearer
+          - oauth2ClientCredentials
+          - oauth2AuthorizationCode
+          - oauth2Password
+          - ssh
+          - custom
+        baseUrl:
+          type: string
+          format: uri
+        header:
+          type: string
+        headerFormat:
+          type: string
+        tokenEndpoint:
+          type: string
+        tokenMethod:
+          type: string
+          enum:
+          - GET
+          - POST
+        tokenContentType:
+          type: string
+        tokenResponsePath:
+          type: string
+        tokenExpiryPath:
+          type: string
+        tokenParameters:
+          type: object
+          additionalProperties:
+            type: string
+        credentialFields:
+          type: array
+          items:
+            type: string
+        refreshOnExpiry:
+          type: boolean
+        retryOn401:
+          type: boolean
+        customSnippet:
+          type: string
+    inspectorPaginationStrategy:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      description: Reusable pagination strategy attached to one or more endpoints.
+      properties:
+        type:
+          type: string
+          enum:
+          - none
+          - offsetLimit
+          - pageSize
+          - cursor
+          - linkHeader
+          - custom
+        limitParam:
+          type: string
+          default: limit
+        offsetParam:
+          type: string
+          default: offset
+        pageParam:
+          type: string
+          default: page
+        sizeParam:
+          type: string
+          default: size
+        cursorParam:
+          type: string
+          description: Query parameter name that carries the cursor on subsequent
+            requests (e.g. `cursor`, `after`, `nextPageToken`).
+        cursorResponsePath:
+          type: string
+          description: Path within the response body that carries the next cursor.
+        nextUrlPath:
+          type: string
+          description: Path within the response body that carries an absolute URL
+            for the next page (alternative to `cursorResponsePath`).
+        totalPath:
+          type: string
+          description: Path within the response body that carries the total count.
+        hasMorePath:
+          type: string
+          description: Path within the response body that carries a boolean
+            indicating more pages exist.
+        maxPerPage:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 100
+        customSnippet:
+          type: string
+          description: 'JavaScript-style snippet used only when `type=custom`.
+            Receives `{ previousResponse, baseUrl }` and returns
+            `{ nextUrl: string | null, done: boolean }`.
+
+            '
+    inspectorRateLimit:
+      type: object
+      additionalProperties: false
+      description: Per-endpoint client-side rate limit configuration.
+      properties:
+        minTimeMs:
+          type: integer
+          minimum: 0
+          description: Minimum milliseconds between requests (e.g. 1000 = 60
+            req/min).
+        maxConcurrent:
+          type: integer
+          minimum: 1
+          default: 1
+        retryAfterHeader:
+          type: string
+          default: Retry-After
+          description: Response header to honor on 429 responses.
+        maxRetries:
+          type: integer
+          minimum: 0
+          default: 3
+    inspectorEndpointDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - endpointDefId
+      - inspectorId
+      - name
+      - urlTemplate
+      - role
+      - updatedAt
+      description: 'A single HTTP call the inspector makes against the vendor
+        API. Endpoints are categorized by `role` — preflight endpoints run first
+        to gather ids, extract endpoints fetch the data, discovery endpoints
+        feed the parent/child discovery list, and children are fanned-out per
+        parent row.
+
+        '
+      properties:
+        endpointDefId:
+          type: string
+          examples:
+          - epd_users_list
+        inspectorId:
+          type: string
+        name:
+          type: string
+          description: 'Logical name of the endpoint within the inspector
+            (e.g. Users, DeviceIDs, Tenants). Appears in the resolved dataprint
+            as the top-level key for this endpoint''s data and as the dependency
+            handle for `dependsOn`.
+
+            '
+          maxLength: 100
+          examples:
+          - Users
+        description:
+          type: string
+        role:
+          type: string
+          enum:
+          - preflight
+          - extract
+          - discovery
+          - child
+          description: 'Pipeline phase:
+
+            - `preflight` — runs first, supplies ids/cursors consumed by
+            extract endpoints
+
+            - `extract` — main data fetch, written to the dataprint
+
+            - `discovery` — emits the parent/child Discovered[] list
+
+            - `child` — fanned-out per parent row of another endpoint via
+            `parentEndpoint`
+
+            '
+        method:
+          type: string
+          enum:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          default: GET
+        urlTemplate:
+          type: string
+          description: 'URL relative to `authentication.baseUrl`. `{fieldName}`
+            placeholders reference ui-config fields, `{parent.X}` placeholders
+            reference fields on the parent row (for `role=child`), and
+            `{preflight.Endpoint[index]}` references preflight data.
+
+            '
+          examples:
+          - /v1/users/{ACME_TENANT_ID}/details
+        bodyTemplate:
+          type: object
+          additionalProperties: true
+          description: 'Templated request body. Same `{placeholder}` rules apply.
+            Use `{preflight.UserIDs}` to inject the entire preflight array.
+
+            '
+        queryParams:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional query parameters merged onto the URL with the
+            same placeholder substitution rules as `urlTemplate`.
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Extra request headers beyond the auth header.
+        pagination:
+          $ref: '#/components/schemas/inspectorPaginationStrategy'
+        rateLimit:
+          $ref: '#/components/schemas/inspectorRateLimit'
+        valuePath:
+          type: string
+          description: 'JSONPath/JMESPath to the array (or value) of interest
+            inside the response. Default is the response root.
+
+            '
+          examples:
+          - data
+        transformResponse:
+          type: string
+          description: 'Optional JMESPath expression applied to the response
+            before storage. Use for filtering, reshaping, or unwrapping
+            envelopes.
+
+            '
+        errorCodesToIgnore:
+          type: array
+          items:
+            type: integer
+          description: HTTP status codes that should be swallowed (logged but not
+            failing the inspection). Common values are 403, 404 for scope-gated
+            endpoints.
+          examples:
+          - - 403
+            - 404
+        extractEnabled:
+          type: string
+          description: 'Optional RSQL expression evaluated against `job.Data` and
+            the discovery context. When present, the endpoint runs only if the
+            expression evaluates true. Example: `ACME_TENANT_ID==null` to run
+            only on parent launchpoints.
+
+            '
+        dependsOn:
+          type: array
+          items:
+            type: string
+          description: Names of endpoints whose results must be available before
+            this one can be templated and run.
+        parentEndpoint:
+          type: string
+          description: 'For `role=child` only. Name of the parent endpoint whose
+            response array is fanned-out. Each row becomes the substitution
+            context for `{parent.X}` placeholders.
+
+            '
+        attachAs:
+          type: string
+          description: For `role=child` only. Property name attached to each
+            parent row.
+        retryPolicy:
+          type: object
+          additionalProperties: false
+          properties:
+            maxRetries:
+              type: integer
+              minimum: 0
+              default: 3
+            backoffMs:
+              type: integer
+              minimum: 0
+              default: 1000
+            backoffStrategy:
+              type: string
+              enum:
+              - linear
+              - exponential
+              default: exponential
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+    inspectorEndpointDefinitionCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - urlTemplate
+      - role
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        role:
+          type: string
+          enum:
+          - preflight
+          - extract
+          - discovery
+          - child
+        method:
+          type: string
+          enum:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          default: GET
+        urlTemplate:
+          type: string
+        bodyTemplate:
+          type: object
+          additionalProperties: true
+        queryParams:
+          type: object
+          additionalProperties:
+            type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        pagination:
+          $ref: '#/components/schemas/inspectorPaginationStrategy'
+        rateLimit:
+          $ref: '#/components/schemas/inspectorRateLimit'
+        valuePath:
+          type: string
+        transformResponse:
+          type: string
+        errorCodesToIgnore:
+          type: array
+          items:
+            type: integer
+        extractEnabled:
+          type: string
+        dependsOn:
+          type: array
+          items:
+            type: string
+        parentEndpoint:
+          type: string
+        attachAs:
+          type: string
+        retryPolicy:
+          type: object
+          additionalProperties: false
+          properties:
+            maxRetries:
+              type: integer
+            backoffMs:
+              type: integer
+            backoffStrategy:
+              type: string
+              enum:
+              - linear
+              - exponential
+    inspectorEndpointDefinitionPatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        role:
+          type: string
+          enum:
+          - preflight
+          - extract
+          - discovery
+          - child
+        method:
+          type: string
+          enum:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        urlTemplate:
+          type: string
+        bodyTemplate:
+          type: object
+          additionalProperties: true
+        queryParams:
+          type: object
+          additionalProperties:
+            type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        pagination:
+          $ref: '#/components/schemas/inspectorPaginationStrategy'
+        rateLimit:
+          $ref: '#/components/schemas/inspectorRateLimit'
+        valuePath:
+          type: string
+        transformResponse:
+          type: string
+        errorCodesToIgnore:
+          type: array
+          items:
+            type: integer
+        extractEnabled:
+          type: string
+        dependsOn:
+          type: array
+          items:
+            type: string
+        parentEndpoint:
+          type: string
+        attachAs:
+          type: string
+        retryPolicy:
+          type: object
+          additionalProperties: false
+          properties:
+            maxRetries:
+              type: integer
+            backoffMs:
+              type: integer
+            backoffStrategy:
+              type: string
+              enum:
+              - linear
+              - exponential
+    inspectorDiscoveryConfig:
+      type: object
+      additionalProperties: false
+      required:
+      - inspectorId
+      - mode
+      - updatedAt
+      description: 'Multi-tenancy configuration. When `mode=parentChild`, parent
+        launchpoints enumerate environment-mappable objects (customers, devices,
+        clusters…) from the named discovery endpoint and emit the Discovered[]
+        list that creates child launchpoints.
+
+        '
+      properties:
+        inspectorId:
+          type: string
+        mode:
+          type: string
+          enum:
+          - singleLaunchpoint
+          - parentChild
+          default: singleLaunchpoint
+        discoverySourceEndpoint:
+          type: string
+          description: Name of an endpoint with `role=discovery` whose response
+            list drives Discovered[] emission. Required when
+            `mode=parentChild`.
+        environmentSearchPath:
+          type: string
+          description: 'JMESPath (relative to a discovery item) to the value
+            placed in `Discovered[].EnvironmentSearch`. Matches against a
+            Liongard environment name during discovery.
+
+            '
+          examples:
+          - name
+        aliasTemplate:
+          type: string
+          description: 'Template for `Discovered[].Alias`, e.g. `"Pax8 -
+            {name}"`. `{x}` placeholders reference fields on the discovery
+            item.
+
+            '
+          examples:
+          - Pax8 - {name}
+        configMapping:
+          type: object
+          additionalProperties:
+            type: string
+          description: 'Map of ui-config field name → JMESPath into the discovery
+            item. Each entry is copied into the Discovered[].Config of every
+            emitted child.
+
+            '
+          examples:
+          - PAX8_COMPANY_ID: id
+        candidateObjectAnalysis:
+          type: string
+          description: 'Required when `mode=singleLaunchpoint`. A short
+            justification listing each candidate object type that was considered
+            (customers, devices, clusters, users…) and why none qualifies as an
+            environment-mappable surface. Prevents accidental flat designs for
+            APIs that do have a discovery surface.
+
+            '
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+    inspectorDiscoveryConfigUpsertRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      properties:
+        mode:
+          type: string
+          enum:
+          - singleLaunchpoint
+          - parentChild
+        discoverySourceEndpoint:
+          type: string
+        environmentSearchPath:
+          type: string
+        aliasTemplate:
+          type: string
+        configMapping:
+          type: object
+          additionalProperties:
+            type: string
+        candidateObjectAnalysis:
+          type: string
+    inspectorView:
+      type: object
+      additionalProperties: false
+      required:
+      - viewId
+      - inspectorId
+      - title
+      - items
+      - updatedAt
+      description: A single UI tab rendered when viewing a system's dataprint.
+      properties:
+        viewId:
+          type: string
+        inspectorId:
+          type: string
+        title:
+          type: string
+          examples:
+          - Users
+        viewType:
+          type: string
+          enum:
+          - parent
+          - child
+          default: parent
+          description: Which side of a parent/child launchpoint surfaces this
+            tab.
+        sortOrder:
+          type: integer
+          description: Tab render order; lower numbers render first.
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/inspectorViewItem'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+    inspectorViewItem:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      properties:
+        type:
+          type: string
+          enum:
+          - keyValueTable
+          - dataTable
+          - chart
+          - summary
+        label:
+          type: string
+        rows:
+          type: array
+          description: 'For `keyValueTable`: array of [label, JMESPath]
+            pairs.
+
+            '
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+        columns:
+          type: array
+          description: 'For `dataTable`: column header labels.'
+          items:
+            type: string
+        path:
+          type: string
+          description: 'For `dataTable`/`chart`: JMESPath expression returning
+            the array of rows.
+
+            '
+        initialColumns:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - name
+            - show
+            properties:
+              name:
+                type: string
+              show:
+                type: boolean
+        defaultSorted:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            properties:
+              id:
+                type: string
+              desc:
+                type: boolean
+                default: false
+        chartType:
+          type: string
+          enum:
+          - bar
+          - line
+          - pie
+          - donut
+          description: Only for `type=chart`.
+    inspectorViewCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - items
+      properties:
+        title:
+          type: string
+        viewType:
+          type: string
+          enum:
+          - parent
+          - child
+        sortOrder:
+          type: integer
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/inspectorViewItem'
+    inspectorViewPatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+        viewType:
+          type: string
+          enum:
+          - parent
+          - child
+        sortOrder:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/inspectorViewItem'
+    inspectorAssetMapping:
+      type: object
+      additionalProperties: false
+      required:
+      - label
+      - query
+      properties:
+        label:
+          type: string
+          description: Display label for the asset attribute.
+          examples:
+          - Hostname
+        query:
+          type: string
+          description: 'JMESPath expression returning the value (scalar, array,
+            or list join) extracted from the dataprint.
+
+            '
+          examples:
+          - hostname
+        attribute:
+          type: string
+          description: Optional asset-inventory attribute key. When omitted, the
+            label slug is used.
+    inspectorAssetMappings:
+      type: object
+      additionalProperties: false
+      required:
+      - inspectorId
+      - mappings
+      - updatedAt
+      properties:
+        inspectorId:
+          type: string
+        assetType:
+          type: string
+          description: Default asset type used when ingesting these mappings.
+          examples:
+          - Pax8 Customer
+        mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/inspectorAssetMapping'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+    inspectorAssetMappingsUpsertRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - mappings
+      properties:
+        assetType:
+          type: string
+        mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/inspectorAssetMapping'
+    inspectorRuleCondition:
+      type: object
+      additionalProperties: false
+      required:
+      - metricId
+      - operator
+      properties:
+        metricId:
+          type: string
+          description: ID (or UUID) of the metric this condition evaluates.
+        operator:
+          type: string
+          enum:
+          - eq
+          - neq
+          - gt
+          - gte
+          - lt
+          - lte
+          - has
+          - empty
+          - nempty
+          - contains
+          - ncontains
+          - changed
+        value:
+          oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+          - type: array
+            items:
+              oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+          - type: 'null'
+          description: 'Comparison value. Null for `empty`, `nempty`, and
+            `changed`.
+
+            '
+    inspectorRuleConditionGroup:
+      type: object
+      additionalProperties: false
+      required:
+      - groupCondition
+      - priority
+      - conditions
+      properties:
+        groupCondition:
+          type: string
+          enum:
+          - and
+          - or
+          default: and
+        priority:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+        conditions:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/inspectorRuleCondition'
+    inspectorRule:
+      type: object
+      additionalProperties: false
+      required:
+      - ruleId
+      - inspectorId
+      - name
+      - conditionGroups
+      - updatedAt
+      properties:
+        ruleId:
+          type: string
+        inspectorId:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        visible:
+          type: boolean
+          default: true
+        body:
+          type: string
+          description: Finding / Concern / Action narrative shown when the rule
+            triggers.
+        dynamicContent:
+          type: string
+          description: Templated string with `{{Metric Name}}` placeholders that
+            are substituted at evaluation time.
+        tags:
+          type: array
+          items:
+            type: string
+        conditionGroups:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/inspectorRuleConditionGroup'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+    inspectorRuleCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - conditionGroups
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+        visible:
+          type: boolean
+        body:
+          type: string
+        dynamicContent:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        conditionGroups:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/inspectorRuleConditionGroup'
+    inspectorRulePatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+        visible:
+          type: boolean
+        body:
+          type: string
+        dynamicContent:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        conditionGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/inspectorRuleConditionGroup'
+    inspectorManifest:
+      type: object
+      additionalProperties: false
+      description: 'Single JSON document describing every sub-resource of a
+        custom inspector. The builder pipeline reads each section and issues
+        the corresponding API call against the right sub-resource endpoint.
+        Sections may be omitted; the pipeline only calls the endpoints whose
+        sections are present.
+
+        '
+      required:
+      - definition
+      properties:
+        manifestVersion:
+          type: string
+          enum:
+          - '1.0'
+          default: '1.0'
+          description: Manifest schema version. Older manifests remain readable
+            after schema additions.
+        definition:
+          $ref: '#/components/schemas/inspectorCreateRequest'
+        authentication:
+          $ref: '#/components/schemas/inspectorAuthenticationUpsertRequest'
+        uiConfigTemplate:
+          $ref: '#/components/schemas/inspectorUiConfigTemplateUpsertRequest'
+        endpoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/inspectorEndpointDefinitionCreateRequest'
+        discovery:
+          $ref: '#/components/schemas/inspectorDiscoveryConfigUpsertRequest'
+        dataprintMetadata:
+          $ref: '#/components/schemas/dataprintMetadata'
+        views:
+          type: array
+          items:
+            $ref: '#/components/schemas/inspectorViewCreateRequest'
+        assetMappings:
+          $ref: '#/components/schemas/inspectorAssetMappingsUpsertRequest'
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/metricCreateRequest'
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/inspectorRuleCreateRequest'
+    inspectorManifestImportRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - manifest
+      properties:
+        manifest:
+          $ref: '#/components/schemas/inspectorManifest'
+        dryRun:
+          type: boolean
+          default: false
+          description: 'When true, the server validates the manifest and returns
+            the call pipeline it would execute (with rendered payloads) without
+            mutating any state. Use this to preview an import.
+
+            '
+        upsert:
+          type: boolean
+          default: false
+          description: 'When true and an inspector with the same `definition.name`
+            already exists, the existing inspector is patched and its
+            sub-resources are replaced instead of failing with 409.
+
+            '
+        stopOnError:
+          type: boolean
+          default: true
+          description: 'When true, the first failing call short-circuits the
+            pipeline. When false, the pipeline continues and the per-call
+            results record both successes and failures.
+
+            '
+        environmentId:
+          type: string
+          description: 'Optional environment scope for the dataprint config
+            section. Required only when `manifest.dataprintMetadata` is
+            present.
+
+            '
+    inspectorManifestImportResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - inspectorId
+      - callPipeline
+      properties:
+        inspectorId:
+          type: string
+          description: ID of the inspector that was created or updated.
+        dryRun:
+          type: boolean
+        callPipeline:
+          type: array
+          description: 'Ordered record of every API call the import made (or
+            would make, when `dryRun=true`). Each entry mirrors the actual
+            sub-resource endpoint contract — same operationId, method, path, and
+            payload that a caller could have issued by hand.
+
+            '
+          items:
+            $ref: '#/components/schemas/inspectorManifestCall'
+        warnings:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - step
+            - message
+            properties:
+              step:
+                type: integer
+              operationId:
+                type: string
+              message:
+                type: string
+    inspectorManifestCall:
+      type: object
+      additionalProperties: false
+      required:
+      - step
+      - operationId
+      - method
+      - path
+      properties:
+        step:
+          type: integer
+          description: 1-based position in the pipeline.
+        operationId:
+          type: string
+          description: OpenAPI operationId of the endpoint invoked.
+          examples:
+          - upsertInspectorAuthentication
+        method:
+          type: string
+          enum:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        path:
+          type: string
+          description: Concrete request path with path-parameters resolved.
+          examples:
+          - /v3/inspectors/inspector_13/authentication
+        payload:
+          description: Request body as it would be sent. Secrets in ui-config
+            fields are not redacted in dryRun mode (the caller already supplied
+            them) but are masked on non-dryRun responses.
+          oneOf:
+          - type: object
+            additionalProperties: true
+          - type: array
+            items: {}
+          - type: 'null'
+        status:
+          type: integer
+          description: HTTP status code returned (absent in `dryRun`).
+        resourceId:
+          type: string
+          description: ID of the resource created or updated by this call (when
+            applicable).
+        durationMs:
+          type: integer
