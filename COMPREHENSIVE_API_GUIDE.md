@@ -107,9 +107,9 @@ curl -X POST "https://api.liongard.com/v3/inspectors" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "acme-monitoring",
-    "displayName": "Acme Monitoring Tool",
+    "alias": "Acme Monitoring Tool",
     "description": "Device monitoring data from Acme platform",
-    "category": "monitoring"
+    "category": "cloud"
   }'
 ```
 
@@ -118,7 +118,7 @@ curl -X POST "https://api.liongard.com/v3/inspectors" \
 {
   "inspectorId": "inspector_abc123",
   "name": "acme-monitoring",
-  "displayName": "Acme Monitoring Tool",
+  "alias": "Acme Monitoring Tool",
   "status": "active"
 }
 ```
@@ -555,6 +555,8 @@ Configuration:
 ---
 
 ## Building a Custom Inspector via API
+
+> **What's standardised vs what stays per-inspector.** Every inspector emits its own dataprint shape — the JSON payload that lands in `POST /v3/.../dataprints` is intentionally not constrained. What the v3 API *does* standardise is **the inputs needed to define an inspector**: its identity, the UI form users fill in, the authentication flow, the HTTP calls it makes, its multi-tenancy model, its UI views, asset mappings, metrics, and alert rules. The per-environment `dataprintMetadata` config (`PUT /v3/environments/{envId}/inspectors/{id}/config`) is what teaches Liongard how to parse one inspector's bespoke dataprint into the shared environments-and-assets model.
 
 Everything covered above — `POST /v3/inspectors`, `PUT /v3/.../config` — defines the *minimum* to start pushing dataprints: the identity and the data mapping. A production inspector typically also needs:
 
@@ -1553,9 +1555,9 @@ class LiongardIntegration:
             headers=self.headers,
             json={
                 "name": "acme-monitor",
-                "displayName": "Acme Network Monitor",
+                "alias": "Acme Network Monitor",
                 "description": "Device monitoring and health data",
-                "category": "monitoring"
+                "category": "cloud"
             }
         )
         

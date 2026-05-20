@@ -30,6 +30,8 @@ This is the OpenAPI specification for the Liongard Data API (v3) — a structure
 - Use **"dataprint"** not "ingestion"
 - Use **"inspector"** for the data source configuration
 - Use **"environment"** for customer/tenant
+- Use **"alias"** for the human-readable inspector display name (never `displayName` — that field belongs to `identity`)
+- Use one of the inspector category enum values: `infrastructure`, `security`, `cloud`, `networking`, `appservices`, `database`, `identity`, `backup` (never invent values like `monitoring`)
 - Inspectors are global, configurations are per-environment
 
 ### 5. Async Processing
@@ -37,6 +39,11 @@ This is the OpenAPI specification for the Liongard Data API (v3) — a structure
 - POST returns 202 Accepted with job ID
 - Only ONE dataprint job per inspector per environment at a time
 - 409 Conflict if concurrent job exists
+
+### 6. Inspector Builder & Manifest Framework
+- The v3 API standardises the **inputs needed to create an inspector** (definition, ui-config, auth, endpoints, discovery, views, asset mappings, metrics, rules). The dataprint payload itself is *not* standardised — every inspector emits its own shape and the per-environment `dataprintMetadata` config teaches Liongard how to parse it.
+- Sub-resource endpoints live under `/v3/inspectors/{id}/...` with the **Inspector Builder** tag.
+- The composite `inspectorManifest` schema + `POST /v3/inspectors/import` lets a caller provision a complete inspector from one document. Keep the manifest schema in lockstep with the standalone JSON Schema at `inspector-manifest.schema.json` and the example at `examples/senteon-manifest.json`.
 
 ## Design History Context
 
@@ -155,9 +162,10 @@ responses:
 
 When changing the spec, also update:
 1. **COMPREHENSIVE_API_GUIDE.md** - Code examples and workflows
-2. **RESPONSE_FORMAT_GUIDE.md** - If changing response structure
-3. **RSQL_FILTER_GUIDE.md** - If adding filterable fields
-4. **API_COMPLETE_SUMMARY.md** - Endpoint counts and stats
+2. **docs/RESPONSE_FORMAT_GUIDE.md** - If changing response structure
+3. **docs/RSQL_FILTER_GUIDE.md** - If adding filterable fields
+4. **docs/INSPECTOR_MANIFEST_GUIDE.md** - If changing any Inspector Builder sub-resource
+5. **inspector-manifest.schema.json** + `examples/senteon-manifest.json` - Keep the standalone JSON Schema and the worked example in sync with the OpenAPI `inspectorManifest` schema
 
 ## Common Tasks
 

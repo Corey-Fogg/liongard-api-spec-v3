@@ -44,7 +44,7 @@ The Liongard Data API v3 follows proper HTTP conventions:
 {
   "inspectorId": "inspector_abc123",
   "name": "acme-monitor",
-  "displayName": "Acme Monitoring Tool",
+  "alias": "Acme Monitoring Tool",
   "status": "active"
 }
 ```

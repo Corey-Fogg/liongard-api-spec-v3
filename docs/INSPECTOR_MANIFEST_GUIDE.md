@@ -14,6 +14,8 @@ The manifest is the v3 API's answer to the question: **"How do I create a comple
 - The same shape is published as the `inspectorManifest` schema in `liongard-api-v3.yaml`.
 - The pipeline that consumes it is exposed at `POST /v3/inspectors/import`.
 
+> **Scope.** The manifest standardises the **fields used to create an inspector**, not the dataprint payload an inspector emits. Every inspector chooses its own dataprint shape; the per-environment `dataprintMetadata` section is how Liongard learns to parse that inspector-specific payload into the shared environments-and-assets model.
+
 ---
 
 ## Why a manifest
