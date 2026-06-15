@@ -1,0 +1,298 @@
+{
+  "manifestVersion": "1.0",
+  "definition": {
+    "name": "unifi-network",
+    "alias": "UniFi Network",
+    "description": "Monitors UniFi network infrastructure via the UniFi Site Manager API — managed sites, gateways/switches/access points, connected clients, firmware status, and WAN/ISP health per site.",
+    "category": "networking",
+    "author": "Liongard",
+    "contactEmail": "support@liongard.com",
+    "helpLink": "https://docs.liongard.com",
+    "defaultFrequency": { "type": "days", "interval": 1 },
+    "constraints": {
+      "platform": ["cloud"],
+      "tiers": ["core"],
+      "frequency": { "maxIntervalType": "hours", "maxIntervalFrequency": 6 }
+    }
+  },
+  "uiConfigTemplate": {
+    "fields": [
+      {
+        "name": "UNIFI_API_KEY",
+        "label": "UniFi Site Manager API Key",
+        "type": "secret",
+        "required": true,
+        "secure": true,
+        "parent": true,
+        "help": "UniFi Site Manager (unifi.ui.com) → Settings → Control Plane → Integrations → Create API Key. The key must have read access to every site you want surfaced."
+      },
+      {
+        "name": "UNIFI_HOST_ID",
+        "label": "Host ID",
+        "type": "string",
+        "required": false,
+        "secure": false,
+        "parent": false,
+        "help": "Auto-populated by parent discovery. The UniFi Console (host) that owns the site."
+      },
+      {
+        "name": "UNIFI_SITE_ID",
+        "label": "Site ID",
+        "type": "string",
+        "required": false,
+        "secure": false,
+        "parent": false,
+        "help": "Auto-populated by parent discovery. The site identifier used to scope device and client queries."
+      },
+      {
+        "name": "UNIFI_SITE_NAME",
+        "label": "Site Name",
+        "type": "string",
+        "required": false,
+        "secure": false,
+        "parent": false,
+        "help": "Auto-populated by parent discovery. The human-friendly site name shown in UniFi."
+      }
+    ]
+  },
+  "authentication": {
+    "type": "apiKey",
+    "baseUrl": "https://api.ui.com",
+    "header": "X-API-KEY",
+    "headerFormat": "{UNIFI_API_KEY}",
+    "credentialFields": ["UNIFI_API_KEY"],
+    "retryOn401": false
+  },
+  "endpoints": [
+    {
+      "name": "Sites",
+      "role": "discovery",
+      "method": "GET",
+      "urlTemplate": "/v1/sites",
+      "valuePath": "data",
+      "extractEnabled": "UNIFI_SITE_ID==null",
+      "pagination": {
+        "type": "cursor",
+        "cursorParam": "pageToken",
+        "cursorResponsePath": "nextToken",
+        "maxPerPage": 200
+      },
+      "rateLimit": { "minTimeMs": 1000, "maxConcurrent": 1 }
+    },
+    {
+      "name": "Site",
+      "role": "extract",
+      "method": "GET",
+      "urlTemplate": "/v1/sites/{UNIFI_SITE_ID}",
+      "extractEnabled": "UNIFI_SITE_ID!=null"
+    },
+    {
+      "name": "Devices",
+      "role": "extract",
+      "method": "GET",
+      "urlTemplate": "/v1/sites/{UNIFI_SITE_ID}/devices",
+      "queryParams": { "hostId": "{UNIFI_HOST_ID}" },
+      "valuePath": "data",
+      "extractEnabled": "UNIFI_SITE_ID!=null",
+      "pagination": {
+        "type": "cursor",
+        "cursorParam": "pageToken",
+        "cursorResponsePath": "nextToken",
+        "maxPerPage": 200
+      },
+      "errorCodesToIgnore": [403, 404]
+    },
+    {
+      "name": "Clients",
+      "role": "extract",
+      "method": "GET",
+      "urlTemplate": "/v1/sites/{UNIFI_SITE_ID}/clients",
+      "valuePath": "data",
+      "extractEnabled": "UNIFI_SITE_ID!=null",
+      "pagination": {
+        "type": "cursor",
+        "cursorParam": "pageToken",
+        "cursorResponsePath": "nextToken",
+        "maxPerPage": 500
+      },
+      "errorCodesToIgnore": [403, 404]
+    },
+    {
+      "name": "Ports",
+      "role": "child",
+      "method": "GET",
+      "parentEndpoint": "Devices",
+      "attachAs": "Ports",
+      "urlTemplate": "/v1/sites/{UNIFI_SITE_ID}/devices/{parent.id}/ports",
+      "valuePath": "data",
+      "errorCodesToIgnore": [403, 404]
+    }
+  ],
+  "discovery": {
+    "mode": "parentChild",
+    "discoverySourceEndpoint": "Sites",
+    "environmentSearchPath": "name",
+    "aliasTemplate": "UniFi - {name}",
+    "configMapping": {
+      "UNIFI_HOST_ID": "hostId",
+      "UNIFI_SITE_ID": "id",
+      "UNIFI_SITE_NAME": "name"
+    }
+  },
+  "dataprintMetadata": {
+    "dataStructure": "split",
+    "environments": {
+      "arrayPath": "Sites",
+      "idPath": "id",
+      "namePath": "name"
+    },
+    "assets": {
+      "arrayPath": "Devices",
+      "namePath": "name",
+      "typePath": "model",
+      "uniqueIdPath": "mac",
+      "environmentIdPath": "siteId"
+    },
+    "views": [
+      {
+        "type": "Network Device",
+        "fields": ["name", "model", "ipAddress", "firmwareVersion", "state", "uptimeSec"]
+      }
+    ]
+  },
+  "views": [
+    {
+      "title": "Overview",
+      "viewType": "child",
+      "sortOrder": 1,
+      "items": [
+        {
+          "type": "keyValueTable",
+          "rows": [
+            ["Site Name", "{{Site.name}}"],
+            ["Devices", "{{length(Devices)}}"],
+            ["Online Devices", "{{length(Devices[?state=='ONLINE'])}}"],
+            ["Connected Clients", "{{length(Clients)}}"],
+            ["Wired Clients", "{{length(Clients[?type=='WIRED'])}}"],
+            ["Wireless Clients", "{{length(Clients[?type=='WIRELESS'])}}"],
+            ["Devices Needing Update", "{{length(Devices[?firmwareUpdatable])}}"]
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Devices",
+      "viewType": "child",
+      "sortOrder": 2,
+      "items": [
+        {
+          "type": "dataTable",
+          "columns": ["Name", "Model", "IP", "MAC", "Firmware", "State", "Uptime (s)"],
+          "path": "{{Devices[].[name, model, ipAddress, mac, firmwareVersion, state, uptimeSec]}}",
+          "defaultSorted": [{ "id": "State", "desc": false }]
+        }
+      ]
+    },
+    {
+      "title": "Clients",
+      "viewType": "child",
+      "sortOrder": 3,
+      "items": [
+        {
+          "type": "dataTable",
+          "columns": ["Hostname", "IP", "MAC", "Type", "Connected To", "Uplink"],
+          "path": "{{Clients[].[name, ipAddress, mac, type, uplinkDeviceName, uplinkName]}}"
+        }
+      ]
+    }
+  ],
+  "assetMappings": {
+    "assetType": "Network Device",
+    "mappings": [
+      { "label": "Device Name",      "query": "name" },
+      { "label": "Model",            "query": "model" },
+      { "label": "IP Address",       "query": "ipAddress" },
+      { "label": "MAC Address",      "query": "mac", "attribute": "macAddress" },
+      { "label": "Firmware Version", "query": "firmwareVersion" },
+      { "label": "State",            "query": "state" },
+      { "label": "Adopted",          "query": "adopted" }
+    ]
+  },
+  "metrics": [
+    {
+      "name": "UniFi: Device Count",
+      "description": "Total devices reporting under this site.",
+      "queries": [{ "query": "length(Devices)", "inspectorVersionId": "latest" }],
+      "metricDisplay": true,
+      "changesEnabled": true
+    },
+    {
+      "name": "UniFi: Offline Devices",
+      "description": "Devices not currently in an ONLINE state.",
+      "queries": [{ "query": "length(Devices[?state!='ONLINE'])", "inspectorVersionId": "latest" }],
+      "metricDisplay": true,
+      "changesEnabled": true
+    },
+    {
+      "name": "UniFi: Devices Needing Firmware Update",
+      "description": "Devices with an available firmware update.",
+      "queries": [{ "query": "length(Devices[?firmwareUpdatable])", "inspectorVersionId": "latest" }],
+      "metricDisplay": true
+    },
+    {
+      "name": "UniFi: Connected Clients",
+      "description": "Total clients connected across the site.",
+      "queries": [{ "query": "length(Clients)", "inspectorVersionId": "latest" }],
+      "metricDisplay": true,
+      "changesEnabled": true
+    }
+  ],
+  "rules": [
+    {
+      "name": "UniFi | Device went offline",
+      "title": "UniFi | One or more devices are offline",
+      "body": "Finding: At least one UniFi device is no longer reporting an ONLINE state.\nConcern: An offline gateway, switch, or access point can mean an outage or hardware failure at the site.\nAction: Review the Devices tab to identify the affected hardware and check site connectivity.",
+      "dynamicContent": "Offline Devices: {{UniFi: Offline Devices}}",
+      "tags": ["unifi", "networking", "availability"],
+      "conditionGroups": [
+        {
+          "groupCondition": "and",
+          "priority": "high",
+          "conditions": [
+            { "metricId": "UniFi: Offline Devices", "operator": "gte", "value": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "UniFi | Device count changed",
+      "title": "UniFi | Device inventory changed",
+      "body": "Finding: The number of devices reporting under this site has changed.\nConcern: A device was added or removed — unexpected changes may indicate unauthorized hardware or a removed device.\nAction: Confirm the change was intended and reconcile against the asset inventory.",
+      "tags": ["unifi", "networking", "change-detection"],
+      "conditionGroups": [
+        {
+          "groupCondition": "and",
+          "priority": "medium",
+          "conditions": [
+            { "metricId": "UniFi: Device Count", "operator": "changed", "value": null }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "UniFi | Firmware updates pending",
+      "title": "UniFi | Firmware updates available on 3+ devices",
+      "body": "Finding: Three or more devices have a pending firmware update.\nConcern: Out-of-date firmware can carry unpatched security vulnerabilities.\nAction: Schedule a maintenance window and apply the available updates from the Devices tab.",
+      "tags": ["unifi", "networking", "security"],
+      "conditionGroups": [
+        {
+          "groupCondition": "and",
+          "priority": "medium",
+          "conditions": [
+            { "metricId": "UniFi: Devices Needing Firmware Update", "operator": "gte", "value": 3 }
+          ]
+        }
+      ]
+    }
+  ]
+}
